@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <clipPath id="brand-edge">
+      <path d="M0 0H65V18H83V35H100V100H35V82H17V65H0Z"/>
+    </clipPath>
+  </defs>
+  <rect class="mark-background" width="100" height="100" fill="#282a36"/>
+  <g clip-path="url(#brand-edge)">
+    <path fill="#8be9fd" d="M0 0H100L0 100Z"/>
+    <path fill="#ff79c6" d="M100 0V100H0Z"/>
+  </g>
+</svg>

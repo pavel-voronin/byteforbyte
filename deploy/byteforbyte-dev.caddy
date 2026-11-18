@@ -1,0 +1,7 @@
+byteforbyte.dev {
+	bind 0.0.0.0
+	root * /srv/byteforbyte/public
+	header Cache-Control "no-cache"
+	encode zstd gzip
+	file_server
+}

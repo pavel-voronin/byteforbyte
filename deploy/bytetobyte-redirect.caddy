@@ -1,0 +1,4 @@
+bytetobyte.dev {
+	bind 0.0.0.0
+	redir https://byteforbyte.dev{uri} permanent
+}
