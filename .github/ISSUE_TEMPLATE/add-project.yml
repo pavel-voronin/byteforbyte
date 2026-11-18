@@ -1,0 +1,56 @@
+name: Add a project
+description: Suggest a byte-for-byte restoration for the catalog.
+title: "[Project] "
+body:
+  - type: input
+    id: project_name
+    attributes:
+      label: Project name
+      placeholder: Dangerous Dave in the Haunted Mansion
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: Original platform
+      placeholder: DOS
+    validations:
+      required: true
+  - type: dropdown
+    id: type
+    attributes:
+      label: Type
+      options:
+        - Game
+        - Software
+    validations:
+      required: true
+  - type: input
+    id: credit
+    attributes:
+      label: Restoration team
+      placeholder: Name or GitHub handle
+    validations:
+      required: true
+  - type: input
+    id: target
+    attributes:
+      label: Exact original release and verified files
+      placeholder: HAUNTED.EXE (1991)
+    validations:
+      required: true
+  - type: input
+    id: repository
+    attributes:
+      label: Project repository URL
+      placeholder: https://github.com/owner/project
+    validations:
+      required: true
+  - type: input
+    id: evidence
+    attributes:
+      label: Byte-for-byte evidence URL
+      description: Link to the recorded comparison or steps to reproduce it.
+      placeholder: https://github.com/owner/project#verification
+    validations:
+      required: true

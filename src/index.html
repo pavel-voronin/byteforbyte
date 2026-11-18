@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en" data-theme="dracula">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="A directory of 1:1 restorations for DOS and other classic platforms.">
+<title>Byte to Byte</title>
+<style>%%THEMES%%
+%%CSS%%</style>
+<a class="skip" id="skip" href="#catalog" data-t="skip">Skip to catalog</a>
+<header class="site">
+  <div class="wrap bar">
+    <a class="brand" id="home" href=""><span class="logo" aria-hidden="true"></span>byte<span class="muted">to</span>byte<span class="tld">.dev</span></a>
+    <div class="prefs">
+      <a id="add-project" class="add-project" data-t="contribute">Add a project</a>
+      <a id="header-repository" class="github-icon" data-a="repo" aria-label="Catalog on GitHub"><svg aria-hidden="true" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0a8 8 0 0 0-2.53 15.59c.4.07.55-.17.55-.38v-1.49c-2.23.49-2.7-.95-2.7-.95-.36-.93-.89-1.18-.89-1.18-.73-.5.05-.49.05-.49.8.06 1.22.82 1.22.82.72 1.22 1.88.87 2.34.66.07-.52.28-.87.51-1.07-1.78-.2-3.65-.89-3.65-3.96 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.64 7.64 0 0 1 4 0c1.53-1.03 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.28.82 2.15 0 3.08-1.87 3.76-3.66 3.96.29.25.54.73.54 1.48v2.22c0 .21.15.46.55.38A8 8 0 0 0 8 0Z"/></svg></a>
+      <select id="theme" aria-label="Color theme" data-a="theme"></select>
+      <select id="language" aria-label="Language" data-a="language"></select>
+    </div>
+  </div>
+</header>
+<main class="wrap">
+  <section class="intro" aria-labelledby="title">
+    <div class="intro-copy">
+      <h1 id="title" data-t="title">Games and software restored byte for byte</h1>
+      <p><span data-t="intro">Exact rebuilds of games and programs for DOS and other classic platforms.</span>
+        <span data-t="criteria">Each project matches a specific original release byte for byte.</span></p>
+    </div>
+    <div class="intro-terminal">
+      <pre class="ascii" dir="ltr" aria-hidden="true"><span class="ascii-prompt">C:\&gt; FC /B</span>
++-------+    +-------+
+| A.EXE | <span class="ascii-match">==</span> | B.EXE |
++-------+    +-------+</pre>
+      <p class="catalog-total" id="total-projects"></p>
+    </div>
+  </section>
+  <section id="catalog" aria-labelledby="catalog-title" tabindex="-1">
+    <div class="section-head">
+      <h2 id="catalog-title" data-t="catalog">Catalog</h2>
+      <p id="count" class="visually-hidden" role="status" aria-atomic="true"></p>
+    </div>
+    <div class="catalog-layout">
+      <div class="filters" role="search" aria-label="Catalog filters" data-a="filters">
+        <label><span data-t="search">Search</span><input type="search" id="query" autocomplete="off" placeholder="Project or target" data-p="placeholder" aria-controls="projects"></label>
+        <label><span data-t="platform">Platform</span><select id="platform" aria-controls="projects"><option value="" data-t="all">All</option></select></label>
+        <label><span data-t="kind">Type</span><select id="kind" aria-controls="projects">
+          <option value="" data-t="all">All</option><option value="game" data-t="game">Game</option><option value="software" data-t="software">Software</option>
+        </select></label>
+        <label><span data-t="sort">Sort by</span><select id="sort" aria-controls="projects">
+          <option value="latest" data-t="latest">Newest added</option><option value="name" data-t="name">Name</option>
+        </select></label>
+      </div>
+      <div class="catalog-results">
+        <table class="index" aria-labelledby="catalog-title">
+          <thead><tr><th scope="col"><span class="visually-hidden" data-t="project">Project</span></th><th scope="col"><span class="visually-hidden" data-t="entryMeta">Platform, type and date added</span></th></tr></thead>
+          <tbody id="projects"></tbody>
+        </table>
+        <div id="empty" class="empty" hidden>
+          <p data-t="empty">No matching projects.</p>
+          <button type="button" id="reset" data-t="reset">Clear filters</button>
+        </div>
+      </div>
+    </div>
+    <noscript>Enable JavaScript to browse the catalog.</noscript>
+  </section>
+</main>
+<footer class="site footer">
+  <div class="wrap foot">
+
+    <p data-t="legal">This directory provides links and catalog metadata only. It does not host project code, binaries, ROMs, or original assets. Rights remain with their respective holders.</p>
+  </div>
+</footer>
+<script id="site-data" type="application/json">%%DATA%%</script>
+<script>%%JS%%</script>
+</html>
