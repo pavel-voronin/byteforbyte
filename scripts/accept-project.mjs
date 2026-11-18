@@ -45,7 +45,7 @@ export function projectFromIssue(issue, catalog) {
   for (const paragraph of paragraphs) {
     const end = paragraph.indexOf("\n");
     const field = paragraph.slice(0, end);
-    const mapping = fields.get(field);
+    const mapping = fields.get(field === "What matches the original?" ? "Exact original release and verified files" : field);
     requireValue(mapping && !Object.hasOwn(values, mapping[0]), "Unknown or duplicate form field.");
     const [key, max] = mapping;
     const value = paragraph.slice(end + 1).trim();

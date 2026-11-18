@@ -35,8 +35,9 @@ body:
   - type: input
     id: target
     attributes:
-      label: Exact original release and verified files
-      placeholder: HAUNTED.EXE (1991)
+      label: "What matches the original?"
+      description: Name the original release and the file or scope that matches byte for byte.
+      placeholder: "Registered DOS v1.3D / DUKE3D.EXE"
     validations:
       required: true
   - type: input

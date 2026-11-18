@@ -21,4 +21,4 @@ python -m http.server 8767 --bind 127.0.0.1 --directory dist
 
 Добавьте словарь в `data/locales.json` с тегом BCP 47, названием на языке перевода, набором строк как у `en` и при необходимости с `"dir": "rtl"`. Пункт выбора появится сам. Язык и цветовая тема запоминаются в браузере. Палитры в data/themes.json основаны на встроенных цветовых темах VS Code 1.146.0 и Dracula. Для каждого набора указан источник. VS Code в браузере не требуется.
 
-GitHub Actions строит `dist/index.html` в PR и в `main`, затем сохраняет его как артефакт. Локальная сборка ссылается на pavel-voronin/bytetobyte. GitHub Actions подставляет текущий репозиторий через `CATALOG_REPOSITORY`. Публикация на Caddy отдельная.
+GitHub Actions строит `dist/index.html` в PR и в `main`, затем сохраняет его как артефакт. Локальная сборка ссылается на pavel-voronin/bytetobyte. GitHub Actions подставляет текущий репозиторий через `CATALOG_REPOSITORY`. Успешная сборка main обновляет HTML в GitHub Release catalog-production. Таймер на Caddy-сервере проверяет метку ревизии и атомарно заменяет страницу. Сервис и таймер находятся в deploy/.

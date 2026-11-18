@@ -9,6 +9,7 @@ const [template, css, js, catalogJson, localesJson, themesJson] = await Promise.
 const projects = JSON.parse(catalogJson);
 const locales = JSON.parse(localesJson);
 const themes = JSON.parse(themesJson);
+const revision = process.env.CATALOG_REVISION || "";
 const repository = process.env.CATALOG_REPOSITORY || "https://github.com/pavel-voronin/bytetobyte";
 
 function assert(condition, message) {
@@ -24,11 +25,12 @@ function https(value) {
   }
 }
 function validDate(value) {
-  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}:\d{2}\.\d{3}Z)?$/.test(value)) return false;
   const date = new Date(value);
-  return !Number.isNaN(+date) && date.toISOString().slice(0, 10) === value;
+  return !Number.isNaN(+date) && date.toISOString().slice(0, value.length) === value;
 }
 
+assert(!revision || /^[a-f0-9]{40}$/.test(revision), "Invalid CATALOG_REVISION");
 assert(https(repository), "Invalid CATALOG_REPOSITORY URL");
 assert(Array.isArray(projects), "Catalog must be an array");
 const seen = new Set();
@@ -43,7 +45,7 @@ for (const [index, project] of projects.entries()) {
   seen.add(project.id);
   assert(["game", "software"].includes(project.kind), record + " has invalid kind");
   assert(project.match === "byte", record + " has invalid match");
-  assert(validDate(project.added), record + " requires a real YYYY-MM-DD date");
+  assert(validDate(project.added), record + " requires a real date (YYYY-MM-DD or UTC ISO timestamp)");
   assert(https(project.repository) && https(project.evidence), record + " requires HTTPS links");
   const target = [project.repository.replace(/\/$/, "").toLowerCase(), project.target.trim().toLowerCase()].join(" ");
   assert(!targets.has(target), record + " duplicates a project target");
@@ -62,7 +64,6 @@ for (const [tag, locale] of Object.entries(locales)) {
     assert(typeof locale.strings?.[key] === "string" &&
       locale.strings[key].trim(), "Missing " + tag + " translation: " + key);
   }
-  assert(typeof locale.total?.other === "string" && locale.total.other.includes("{n}"), "Missing catalog total: " + tag);
   assert(["{shown}", "{total}"].every(key => locale.strings.count.includes(key)), "Missing count tokens: " + tag);
 }
 
@@ -81,8 +82,9 @@ const themeCss = themes.map(({ id, name, scheme, colors }) => {
 assert(themeIds.has("dracula"), "Missing default theme");
 const themeOptions = themes.map(({ id, name }) => ({ id, name }));
 const data = JSON.stringify({ projects, locales, repository, themes: themeOptions }).replaceAll("<", "\\u003c");
-const assets = { CSS: css, JS: js, DATA: data, THEMES: themeCss };
-const html = template.replace(/%%(CSS|JS|DATA|THEMES)%%/g, (_, key) => assets[key]);
+const assets = { CSS: css, JS: js, DATA: data, THEMES: themeCss,
+  REVISION: revision ? '<meta name="catalog-revision" content="' + revision + '">' : "" };
+const html = template.replace(/%%(CSS|JS|DATA|THEMES|REVISION)%%/g, (_, key) => assets[key]);
 await mkdir(file("dist/"), { recursive: true });
 await writeFile(file("dist/index.html"), html);
 console.log("Built dist/index.html with " + projects.length + " projects and " + Object.keys(locales).length + " locales.");

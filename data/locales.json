@@ -29,10 +29,6 @@
       "project": "Project",
       "entryMeta": "Platform, type and date added",
       "theme": "Color theme"
-    },
-    "total": {
-      "one": "{n} project in the catalog",
-      "other": "{n} projects in the catalog"
     }
   },
   "ru": {
@@ -65,12 +61,6 @@
       "project": "Проект",
       "entryMeta": "Платформа, тип и дата добавления",
       "theme": "Цветовая тема"
-    },
-    "total": {
-      "one": "{n} проект в каталоге",
-      "few": "{n} проекта в каталоге",
-      "many": "{n} проектов в каталоге",
-      "other": "{n} проекта в каталоге"
     }
   },
   "es": {
@@ -103,10 +93,6 @@
       "project": "Proyecto",
       "entryMeta": "Plataforma, tipo y fecha de incorporación",
       "theme": "Tema de color"
-    },
-    "total": {
-      "one": "{n} proyecto en el catálogo",
-      "other": "{n} proyectos en el catálogo"
     }
   },
   "pt-BR": {
@@ -139,11 +125,6 @@
       "project": "Projeto",
       "entryMeta": "Plataforma, tipo e data de inclusão",
       "theme": "Tema de cores"
-    },
-    "total": {
-      "=0": "{n} projetos no catálogo",
-      "one": "{n} projeto no catálogo",
-      "other": "{n} projetos no catálogo"
     }
   },
   "fr": {
@@ -176,10 +157,6 @@
       "project": "Projet",
       "entryMeta": "Plateforme, type et date d’ajout",
       "theme": "Thème de couleurs"
-    },
-    "total": {
-      "one": "{n} projet au catalogue",
-      "other": "{n} projets au catalogue"
     }
   },
   "zh-CN": {
@@ -212,9 +189,6 @@
       "project": "项目",
       "entryMeta": "平台、类型及收录日期",
       "theme": "颜色主题"
-    },
-    "total": {
-      "other": "已收录 {n} 个项目"
     }
   },
   "ja": {
@@ -247,9 +221,6 @@
       "project": "プロジェクト",
       "entryMeta": "プラットフォーム・種類・追加日",
       "theme": "カラーテーマ"
-    },
-    "total": {
-      "other": "{n} 件のプロジェクトを収録"
     }
   },
   "ar": {
@@ -283,14 +254,6 @@
       "project": "المشروع",
       "entryMeta": "المنصة والنوع وتاريخ الإضافة",
       "theme": "سمة الألوان"
-    },
-    "total": {
-      "zero": "لا مشاريع في الفهرس",
-      "one": "مشروع واحد في الفهرس",
-      "two": "مشروعان في الفهرس",
-      "few": "{n} مشاريع في الفهرس",
-      "many": "{n} مشروعًا في الفهرس",
-      "other": "{n} مشروع في الفهرس"
     }
   }
 }

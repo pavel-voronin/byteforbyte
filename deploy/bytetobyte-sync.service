@@ -1,0 +1,15 @@
+[Unit]
+Description=Install the verified bytetobyte catalog from GitHub
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=bytetobyte-deploy
+Group=bytetobyte-deploy
+ExecStart=/usr/local/libexec/bytetobyte-sync
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/srv/bytetobyte/public /srv/bytetobyte/staging

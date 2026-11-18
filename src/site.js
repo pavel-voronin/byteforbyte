@@ -53,11 +53,6 @@ function localize() {
   document.documentElement.dir = locales[language].dir ?? "ltr";
   document.title = "Byte to Byte · " + t("catalog");
   ui.locale.value = language;
-  const total = projects.length;
-  const category = new Intl.PluralRules(language).select(total);
-  const forms = locales[language].total;
-  const wording = forms["=" + total] ?? forms[category] ?? forms.other;
-  byId("total-projects").textContent = wording.replace("{n}", new Intl.NumberFormat(language).format(total));
   document.querySelectorAll("[data-t]").forEach((el) => { el.textContent = t(el.dataset.t); });
   document.querySelectorAll("[data-a]").forEach((el) => { el.setAttribute("aria-label", t(el.dataset.a)); });
   document.querySelectorAll("[data-p]").forEach((el) => { el.placeholder = t(el.dataset.p); });

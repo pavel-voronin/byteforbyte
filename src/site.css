@@ -63,7 +63,6 @@ h1 {
 .ascii { margin: 0; padding: 7px 9px; color: var(--comment); font: .72rem/1.25 var(--mono); text-align: left }
 .ascii-prompt { color: var(--command) }
 .ascii-match { color: var(--success); font-weight: 700 }
-.catalog-total { padding: 4px 9px; border-block-start: 1px solid var(--rule); color: var(--ink); font: .76rem/1.35 var(--mono) }
 #catalog { scroll-margin-block-start: 12px }
 .section-head {
   display: flex; align-items: center; justify-content: space-between; gap: 10px;
@@ -113,7 +112,6 @@ h1 {
   .prefs { margin-inline-start: 0 }
   .intro { grid-template-columns: 1fr; row-gap: 9px }
   .intro-terminal { display: flex; flex-wrap: wrap; align-items: stretch }
-  .catalog-total { display: grid; align-content: center; flex: 1 1 105px }
   .ascii { font-size: .66rem }
   .entry-name,.index .entry-meta { padding-inline: 5px }
   .entry-type { display: block; margin-inline-start: 0; line-height: 16px }
