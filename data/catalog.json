@@ -46,5 +46,17 @@
     "evidence": "https://github.com/n64decomp/sm64#step-3-build-the-rom",
     "match": "byte",
     "added": "2026-11-18"
+  },
+  {
+    "id": "proposal-1",
+    "title": "Duke Nukem 3D v1.3D",
+    "platform": "DOS",
+    "kind": "game",
+    "credit": "abedegno",
+    "target": "Registered DOS v1.3D / DUKE3D.EXE",
+    "repository": "https://github.com/abedegno/duke3d-1.3d",
+    "evidence": "https://github.com/abedegno/duke3d-1.3d#verification-and-provenance",
+    "match": "byte",
+    "added": "2026-11-18"
   }
 ]
