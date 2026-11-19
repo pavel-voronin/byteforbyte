@@ -3,7 +3,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="description" content="A directory of 1:1 restorations for DOS and other classic platforms.">
-<link rel="icon" type="image/svg+xml" href="%%ICON%%">
+<link id="favicon" rel="icon" type="image/svg+xml" sizes="16x16" href="%%ICON%%">
 <link rel="canonical" href="https://byteforbyte.dev/">
 <title>Byte for Byte</title>
 %%REVISION%%
@@ -23,57 +23,73 @@
     </div>
   </div>
 </header>
+<div id="page-scroll">
 <main class="wrap">
   <section class="intro" aria-labelledby="title">
-    <div class="intro-copy">
-      <h1 id="title" data-t="title">Games and software restored byte for byte</h1>
-      <p><span data-t="intro">Exact rebuilds of games and programs for DOS and other classic platforms.</span>
-        <span data-t="criteria">Each project matches a specific original release byte for byte.</span></p>
-    </div>
-    <div class="intro-terminal">
-      <pre class="ascii" dir="ltr" aria-hidden="true"><span class="ascii-prompt">C:\&gt; FC /B</span>
-+-------+    +-------+
-| A.EXE | <span class="ascii-match">==</span> | B.EXE |
-+-------+    +-------+</pre>
-    </div>
+    <h1 id="title" data-t="title">Reconstructed source code</h1>
+    <p><span data-t="intro">Games and software for DOS and other classic platforms.</span>
+      <span data-t="criteria">The rebuilt binaries match a specific original release byte for byte.</span>
+      <span data-t="legal">Links and metadata only. Rights belong to their holders.</span></p>
   </section>
   <section id="catalog" aria-labelledby="catalog-title" tabindex="-1">
-    <div class="section-head">
-      <h2 id="catalog-title" data-t="catalog">Catalog</h2>
-      <p id="count" class="visually-hidden" role="status" aria-atomic="true"></p>
-    </div>
+    <h2 id="catalog-title" class="visually-hidden" data-t="catalog">Catalog</h2>
+    <p id="count" class="visually-hidden" role="status" aria-atomic="true"></p>
     <div class="catalog-layout">
-      <div class="filters" role="search" aria-label="Catalog filters" data-a="filters">
-        <label><span data-t="search">Search</span><input type="search" id="query" autocomplete="off" placeholder="Project or target" data-p="placeholder" aria-controls="projects"></label>
-        <label><span data-t="platform">Platform</span><select id="platform" aria-controls="projects"><option value="" data-t="all">All</option></select></label>
-        <label><span data-t="kind">Type</span><select id="kind" aria-controls="projects">
-          <option value="" data-t="all">All</option><option value="game" data-t="game">Game</option><option value="software" data-t="software">Software</option>
-        </select></label>
-        <label><span data-t="sort">Sort by</span><select id="sort" aria-controls="projects">
-          <option value="latest" data-t="latest">Newest added</option><option value="name" data-t="name">Name</option>
-        </select></label>
+      <div class="catalog-sidebar" id="catalog-sidebar">
+        <div class="filters" id="filters" role="search" aria-label="Catalog filters" data-a="filters">
+          <div class="filter-search">
+            <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#lucide-search"></use></svg>
+            <input type="search" id="query" autocomplete="off" placeholder="Search projects" data-p="placeholder" aria-label="Search" data-a="search" aria-controls="projects">
+          </div>
+          <button type="button" id="filter-toggle" data-t="showFilters" aria-controls="filter-panel" aria-expanded="false">Show filters</button>
+          <div id="filter-panel">
+            <fieldset>
+              <legend data-icon="monitor"><span data-t="platform">Platform</span></legend>
+              <div class="filter-options" id="platform"></div>
+            </fieldset>
+            <fieldset>
+              <legend data-icon="shapes"><span data-t="kind">Type</span></legend>
+              <div class="filter-options" id="kind">
+                <label><input type="checkbox" value="game" aria-controls="projects"><span data-t="game">Game</span></label>
+                <label><input type="checkbox" value="software" aria-controls="projects"><span data-t="software">Software</span></label>
+              </div>
+            </fieldset>
+          </div>
+          <div id="filter-actions" class="filter-actions" hidden>
+            <button type="button" id="reset" data-t="reset" aria-controls="projects">Reset filters</button>
+            <button type="button" id="share" aria-label="Share" data-a="share">
+              <svg class="technology-icon share-icon-default" viewBox="0 0 24 24" aria-hidden="true"><use href="#lucide-share-2"></use></svg>
+              <svg class="technology-icon share-icon-copied" viewBox="0 0 24 24" aria-hidden="true">
+                <use href="#lucide-save"></use>
+                <circle class="share-check-background" cx="18" cy="18" r="6"></circle>
+                <use href="#lucide-check" x="12" y="12" width="12" height="12"></use>
+              </svg>
+            </button>
+            <p id="share-status" class="visually-hidden" role="status"></p>
+          </div>
+        </div>
       </div>
-      <div class="catalog-results">
-        <table class="index" aria-labelledby="catalog-title">
-          <thead><tr><th scope="col"><span class="visually-hidden" data-t="project">Project</span></th><th scope="col"><span class="visually-hidden" data-t="entryMeta">Platform, type and date added</span></th></tr></thead>
-          <tbody id="projects"></tbody>
+      <div class="catalog-results" id="catalog-results">
+        <table class="index" id="projects" aria-labelledby="catalog-title">
+          <colgroup><col class="entry-screenshot-column"><col></colgroup>
+          <thead><tr><th scope="col" colspan="2"><span class="visually-hidden" data-t="project">Project</span></th></tr></thead>
         </table>
         <div id="empty" class="empty" hidden>
           <p data-t="empty">No matching projects.</p>
-          <button type="button" id="reset" data-t="reset">Clear filters</button>
         </div>
+        <footer class="footer" id="catalog-footer">
+          <div class="footer-actions">
+            <a id="feedback-link" data-a="feedback" aria-label="Feedback"></a>
+            <img class="footer-controller" src="%%CONTROLLER%%" width="900" height="375" alt="">
+          </div>
+        </footer>
       </div>
     </div>
     <noscript>Enable JavaScript to browse the catalog.</noscript>
   </section>
 </main>
-<footer class="site footer">
-  <div class="wrap foot">
-
-    <p data-t="legal">This directory provides links and catalog metadata only. It does not host project code, binaries, ROMs, or original assets. Rights remain with their respective holders.</p>
-    <p><a id="feedback-link" data-t="feedback">Found a bug or have a suggestion? Open an issue on GitHub.</a></p>
-  </div>
-</footer>
+</div>
+%%LUCIDE%%
 <script id="site-data" type="application/json">%%DATA%%</script>
 <script>%%JS%%</script>
 </html>

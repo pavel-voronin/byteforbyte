@@ -1,15 +1,35 @@
 import { execFileSync } from "node:child_process";
-import { readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 
 const catalogPath = "data/catalog.json";
+const screenshotDirectory = "assets/screenshots";
 const branchPrefix = "catalog/issue-";
+const technologyField = "Technology stack";
+const releaseYearField = "Original release year";
+const screenshotField = "Screenshot";
+const attachmentHosts = new Set(["user-images.githubusercontent.com", "private-user-images.githubusercontent.com"]);
+const attachmentRedirectHosts = new Set([
+  ...attachmentHosts,
+  "objects.githubusercontent.com",
+  "github-production-user-asset-6210df.s3.amazonaws.com",
+  "github-production-repository-file-5c1aeb.s3.amazonaws.com"
+]);
+const fieldAliases = new Map([
+  ["Restoration team", "Restorer"],
+  ["Restoration team URL", "Restorer URL"],
+  ["Exact original release and verified files", "What matches the original?"]
+]);
+const optionalUrlFields = new Map([
+  ["Restorer URL", "creditUrl"],
+  ["Playable version URL", "playUrl"]
+]);
 const fields = new Map([
   ["Project name", ["title", 150]],
   ["Original platform", ["platform", 40]],
   ["Type", ["kind", 12]],
-  ["Restoration team", ["credit", 120]],
-  ["Exact original release and verified files", ["target", 240]],
+  ["Restorer", ["credit", 120]],
+  ["What matches the original?", ["target", 240]],
   ["Project repository URL", ["repository", 500]],
   ["Byte-for-byte evidence URL", ["evidence", 500]]
 ]);
@@ -26,6 +46,54 @@ function httpsUrl(value, field) {
   return url;
 }
 
+function githubAttachment(url) {
+  return attachmentHosts.has(url.hostname) || (url.hostname === "github.com" &&
+    /^\/(?:user-attachments\/(?:assets|files)|[^/]+\/[^/]+\/(?:assets|files))\//.test(url.pathname));
+}
+
+async function downloadScreenshot(value) {
+  let url = httpsUrl(value, screenshotField);
+  const signal = AbortSignal.timeout(30_000);
+  const limit = 10 * 1024 * 1024;
+  for (let redirects = 0; redirects <= 4; redirects++) {
+    requireValue(!url.port && (githubAttachment(url) || (redirects > 0 && attachmentRedirectHosts.has(url.hostname))),
+      "Use an image uploaded through the Screenshot field.");
+    const response = await fetch(url, { redirect: "manual", signal });
+    const redirect = response.headers.get("location");
+    if (response.status >= 300 && response.status < 400 && redirect) {
+      await response.body?.cancel();
+      url = httpsUrl(new URL(redirect, url).href, screenshotField);
+      continue;
+    }
+    requireValue(response.ok && response.body, "Screenshot download failed (" + response.status + ").");
+    requireValue(Number(response.headers.get("content-length")) <= limit, "Screenshot exceeds GitHub’s 10 MiB image limit.");
+    const chunks = [];
+    let bytes = 0;
+    for await (const chunk of response.body) {
+      bytes += chunk.byteLength;
+      requireValue(bytes <= limit, "Screenshot exceeds GitHub’s 10 MiB image limit.");
+      chunks.push(chunk);
+    }
+    return Buffer.concat(chunks, bytes);
+  }
+  throw new Error("Too many redirects while downloading the screenshot.");
+}
+
+async function prepareScreenshot(project, url) {
+  const input = await downloadScreenshot(url);
+  const file = project.id + ".webp";
+  const path = screenshotDirectory + "/" + file;
+  await mkdir(screenshotDirectory, { recursive: true });
+  const python = process.platform === "win32" ? "py" : "/usr/bin/python3";
+  const encoderEnv = { ...process.env };
+  delete encoderEnv.GITHUB_TOKEN;
+  const output = execFileSync(python, ["scripts/prepare-screenshot.py", path], {
+    input, encoding: "utf8", timeout: 30_000, env: encoderEnv
+  });
+  project.screenshot = { file, ...JSON.parse(output) };
+  return { path, data: await readFile(path) };
+}
+
 function normalize(value) {
   return value.normalize("NFKC").toLowerCase().trim().replace(/\s+/g, " ");
 }
@@ -40,19 +108,56 @@ export function projectFromIssue(issue, catalog) {
   requireValue(Number.isSafeInteger(issue.number) && issue.number > 0, "Invalid issue number.");
   requireValue(typeof issue.body === "string" && issue.body.length <= 6000, "Invalid issue body.");
   const paragraphs = issue.body.replace(/\r\n/g, "\n").trim().split(/^### /m);
-  requireValue(paragraphs.shift() === "" && paragraphs.length === fields.size, "Use the Add a project issue form.");
+  requireValue(paragraphs.shift() === "", "Use the Add a project issue form.");
   const values = {};
+  const optionalUrls = {};
+  let technologies;
+  let releaseYear;
+  let screenshotUrl;
   for (const paragraph of paragraphs) {
     const end = paragraph.indexOf("\n");
-    const field = paragraph.slice(0, end);
-    const mapping = fields.get(field === "What matches the original?" ? "Exact original release and verified files" : field);
+    const label = paragraph.slice(0, end);
+    const field = fieldAliases.get(label) ?? label;
+    const value = paragraph.slice(end + 1).trim();
+    if (field === screenshotField) {
+      requireValue(screenshotUrl === undefined, "Include the screenshot field only once.");
+      if (!value || value === "_No response_") {
+        screenshotUrl = null;
+      } else {
+        const urls = value.match(/https:\/\/[^\s<>"')\]]+/gi) ?? [];
+        requireValue(urls.length === 1, "Attach one screenshot.");
+        screenshotUrl = httpsUrl(urls[0], screenshotField).href;
+      }
+      continue;
+    }
+    const optionalUrl = optionalUrlFields.get(field);
+    if (optionalUrl) {
+      requireValue(!Object.hasOwn(optionalUrls, optionalUrl) && value.length <= 500, "Duplicate or too long field: " + field);
+      optionalUrls[optionalUrl] = !value || value === "_No response_" ? null : httpsUrl(value, field).href;
+      continue;
+    }
+    if (field === releaseYearField) {
+      const blank = !value || value === "_No response_";
+      requireValue(releaseYear === undefined && (blank || /^[1-9][0-9]{3}$/.test(value)),
+        "Enter the original release year once as four digits.");
+      releaseYear = blank ? null : Number(value);
+      continue;
+    }
+    if (field === technologyField) {
+      requireValue(technologies === undefined && value.length <= 240 && !/[\p{Cc}\u2028\u2029]/u.test(value),
+        "Duplicate, too long, or multiline field: " + technologyField);
+      technologies = value && value !== "_No response_" ? value.normalize("NFC").split(",").map((name) => name.trim()) : [];
+      requireValue(technologies.every(Boolean), "List technology names separated by commas.");
+      continue;
+    }
+    const mapping = fields.get(field);
     requireValue(mapping && !Object.hasOwn(values, mapping[0]), "Unknown or duplicate form field.");
     const [key, max] = mapping;
-    const value = paragraph.slice(end + 1).trim();
     requireValue(value && value !== "_No response_" && value.length <= max && !/[\p{Cc}\u2028\u2029]/u.test(value),
       "Missing, too long, or multiline field: " + field);
     values[key] = value.normalize("NFC");
   }
+  requireValue(Object.keys(values).length === fields.size, "Use the Add a project issue form.");
   requireValue(values.kind === "Game" || values.kind === "Software", "Select Game or Software.");
   const repo = httpsUrl(values.repository, "Project repository");
   requireValue(repo.pathname !== "/" && !repo.search && !repo.hash, "Use the project repository URL without a query or fragment.");
@@ -60,11 +165,22 @@ export function projectFromIssue(issue, catalog) {
   const added = new Date(issue.updated_at);
   requireValue(Number.isFinite(+added), "Invalid acceptance date.");
   const knownPlatform = catalog.find((item) => normalize(item.platform) === normalize(values.platform));
+  const names = new Map(catalog.flatMap((item) => item.technologies ?? []).map((name) => [normalize(name), name]));
+  const stack = new Set();
+  for (const name of technologies ?? []) {
+    const key = normalize(name);
+    if (!names.has(key)) names.set(key, name);
+    stack.add(names.get(key));
+  }
   return {
     id: "proposal-" + issue.number,
     ...values,
+    ...Object.fromEntries(Object.entries(optionalUrls).filter(([, value]) => value !== null)),
+    ...(screenshotUrl ? { screenshotUrl } : {}),
     platform: knownPlatform?.platform ?? values.platform,
     kind: values.kind.toLowerCase(),
+    ...(stack.size ? { technologies: [...stack] } : {}),
+    ...(releaseYear ? { releaseYear } : {}),
     match: "byte",
     added: added.toISOString().slice(0, 10)
   };
@@ -115,7 +231,7 @@ async function main() {
   }
 
   const catalog = JSON.parse(await readFile(catalogPath, "utf8"));
-  const project = projectFromIssue(event.issue, catalog);
+  const { screenshotUrl, ...project } = projectFromIssue(event.issue, catalog);
   assertUnique(project, catalog);
 
   for (let page = 1; ; page++) {
@@ -130,31 +246,46 @@ async function main() {
     if (pulls.length < 100) break;
   }
 
-  const next = Buffer.from(JSON.stringify([...catalog, project], null, 2) + "\n");
+  const screenshot = screenshotUrl ? await prepareScreenshot(project, screenshotUrl) : null;
+  const next = JSON.stringify([...catalog, project], null, 2) + "\n";
   await writeFile(catalogPath, next);
   execFileSync(process.execPath, ["build.mjs"], { stdio: "inherit" });
 
   const branchPath = "/git/ref/heads/" + branch;
   const baseSha = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
   const remoteBranch = await api(branchPath, "GET", undefined, true);
-  if (!remoteBranch) await api("/git/refs", "POST", { ref: "refs/heads/" + branch, sha: baseSha });
-
-  const prior = await api("/contents/" + catalogPath + "?ref=" + encodeURIComponent(branch));
-  if (!Buffer.from(prior.content, "base64").equals(next)) {
-    // A retry can complete a branch that was created before the script reached the commit.
-    requireValue(!remoteBranch || remoteBranch.object.sha === baseSha, "The proposal branch already has different changes.");
-    await api("/contents/" + catalogPath, "PUT", {
-      message: "Add catalog project from issue #" + number,
-      content: next.toString("base64"),
-      sha: prior.sha,
-      branch
+  if (remoteBranch && remoteBranch.object.sha !== baseSha) {
+    // Resume a completed commit if PR creation failed on the previous attempt.
+    const ref = "?ref=" + encodeURIComponent(remoteBranch.object.sha);
+    const prior = await api("/contents/" + catalogPath + ref);
+    const priorScreenshot = screenshot && await api("/contents/" + screenshot.path + ref, "GET", undefined, true);
+    requireValue(Buffer.from(prior.content, "base64").toString("utf8") === next
+      && (!screenshot || (priorScreenshot && Buffer.from(priorScreenshot.content, "base64").equals(screenshot.data))),
+    "The proposal branch already has different changes.");
+  } else {
+    const baseTree = execFileSync("git", ["rev-parse", "HEAD^{tree}"], { encoding: "utf8" }).trim();
+    const tree = [{ path: catalogPath, mode: "100644", type: "blob", content: next }];
+    if (screenshot) {
+      const blob = await api("/git/blobs", "POST", { content: screenshot.data.toString("base64"), encoding: "base64" });
+      tree.push({ path: screenshot.path, mode: "100644", type: "blob", sha: blob.sha });
+    }
+    const updated = await api("/git/trees", "POST", { base_tree: baseTree, tree });
+    const commit = await api("/git/commits", "POST", {
+      message: "Add catalog project from issue #" + number, tree: updated.sha, parents: [baseSha]
     });
+    if (remoteBranch) {
+      await api("/git/refs/heads/" + branch, "PATCH", { sha: commit.sha, force: false });
+    } else {
+      await api("/git/refs", "POST", { ref: "refs/heads/" + branch, sha: commit.sha });
+    }
   }
   const pr = await api("/pulls", "POST", {
     title: "Add catalog project from issue #" + number,
     head: branch,
     base,
-    body: "Adds the accepted project to the catalog.\n\nCloses #" + number
+    body: "Adds the accepted project to the catalog.\n\n"
+      + (screenshot ? "Includes the optimized WebP screenshot for the catalog card.\n\n" : "")
+      + "Closes #" + number
   });
   console.log("Created " + pr.html_url);
 }

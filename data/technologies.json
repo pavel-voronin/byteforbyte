@@ -1,0 +1,6 @@
+{
+  "techLanguages": ["C", "MIPS Assembly", "Pascal", "x86 Assembly"],
+  "techEngines": ["Build Engine"],
+  "techBuildTools": ["Borland C++ 2.0", "LZEXE", "SGI IDO", "TASM", "TLINK", "Turbo C 2.01", "Turbo Pascal 7.0", "Watcom C/C++"],
+  "techRuntimes": ["DOS/4GW"]
+}

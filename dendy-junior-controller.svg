@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="375" viewBox="30 46 900 375" role="img" aria-labelledby="title desc">
+  <title id="title">Контроллер Dendy Junior</title>
+  <desc id="desc">Ортографический вид спереди. Слева крестовина, по центру Select и Start, справа две красные кнопки Turbo и чёрные кнопки B и A.</desc>
+  <defs>
+    <linearGradient id="shell" x2="0" y2="1" gradientUnits="objectBoundingBox">
+      <stop stop-color="#434750"/>
+      <stop offset=".53" stop-color="#2d3038"/>
+      <stop offset="1" stop-color="#212329"/>
+    </linearGradient>
+    <linearGradient id="face" x2="0" y2="1" gradientUnits="objectBoundingBox">
+      <stop stop-color="#e9e7d8"/>
+      <stop offset="1" stop-color="#cecebd"/>
+    </linearGradient>
+    <linearGradient id="well" x2="0" y2="1" gradientUnits="objectBoundingBox">
+      <stop stop-color="#3b404a"/>
+      <stop offset="1" stop-color="#595d66"/>
+    </linearGradient>
+    <linearGradient id="black" x2="0" y2="1" gradientUnits="objectBoundingBox">
+      <stop stop-color="#292f39"/>
+      <stop offset="1" stop-color="#0d1118"/>
+    </linearGradient>
+    <linearGradient id="red" x2="0" y2="1" gradientUnits="objectBoundingBox">
+      <stop stop-color="#df292a"/>
+      <stop offset="1" stop-color="#b51018"/>
+    </linearGradient>
+    <radialGradient id="d-pad-dimple" cx=".5" cy=".5" r=".5" fx=".42" fy=".6">
+      <stop stop-color="#343e4d" stop-opacity=".75"/>
+      <stop offset=".28" stop-color="#1c2430"/>
+      <stop offset=".65" stop-color="#0c1119"/>
+      <stop offset="1" stop-color="#121820" stop-opacity="0"/>
+    </radialGradient>
+    <rect id="face-outline" x="66" y="77" width="828" height="311.5" rx="15" ry="17.5"/>
+    <clipPath id="face-clip">
+      <use href="#face-outline"/>
+    </clipPath>
+    <g id="turbo-button">
+      <circle r="44" fill="#22222a"/>
+      <circle r="43" fill="#850e15"/>
+      <circle r="41" fill="url(#red)" stroke="#d62a2d" stroke-width="2"/>
+    </g>
+    <g id="action-button">
+      <circle r="49" fill="#2d3139"/>
+      <circle r="46" fill="#10131a"/>
+      <circle r="42" fill="url(#black)" stroke="#343a45" stroke-width="2"/>
+    </g>
+    <g id="menu-button">
+      <rect x="-40" y="-17" width="80" height="37" rx="17" fill="#0c1016"/>
+      <rect x="-39" y="-18" width="76" height="29" rx="14.5" fill="url(#black)" stroke="#272e38"/>
+    </g>
+  </defs>
+
+  <g id="housing">
+    <rect x="36" y="50" width="888" height="365" rx="33" ry="38.5" fill="url(#shell)" stroke="#1c1e24" stroke-width="4"/>
+    <rect x="46" y="61" width="868" height="344" rx="25" ry="29" fill="none" stroke="#545860" stroke-width="2"/>
+    <use href="#face-outline" fill="url(#face)" stroke="#1e2128" stroke-width="3"/>
+    <path d="M60 322h840m-840 10.5h840" clip-path="url(#face-clip)" fill="none" stroke="#3f4a56" stroke-width="3.2"/>
+  </g>
+
+  <g id="branding" transform="translate(0 77) scale(1 1.166667) translate(0 -77)" fill="#9b1e24" text-anchor="middle">
+    <text x="183" y="112" font-family="Georgia, serif" font-size="27" font-weight="bold" letter-spacing="-1">Dendy</text>
+    <text x="183" y="138" font-family="Arial, sans-serif" font-size="21" font-weight="900" font-style="italic" textLength="63" lengthAdjust="spacingAndGlyphs">JUNIOR</text>
+  </g>
+
+  <g id="d-pad">
+    <path d="M154 177H212Q224 177 224 189V230H265Q277 230 277 242V300Q277 312 265 312H224V353Q224 365 212 365H154Q142 365 142 353V312H101Q89 312 89 300V242Q89 230 101 230H142V189Q142 177 154 177Z" fill="#292d35"/>
+    <path d="M154 183H212Q218 183 218 189V236H265Q271 236 271 242V300Q271 306 265 306H218V353Q218 359 212 359H154Q148 359 148 353V306H101Q95 306 95 300V242Q95 236 101 236H148V189Q148 183 154 183Z" fill="url(#black)" stroke="#404651" stroke-width="2.5"/>
+    <path d="M174 215L183 206L192 215M174 327L183 336L192 327M127 262L118 271L127 280M239 262L248 271L239 280" fill="none" stroke="#303641" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="183" cy="271" r="22" fill="url(#d-pad-dimple)"/>
+  </g>
+
+  <g id="select-start">
+    <g id="menu-well">
+      <rect id="menu-well-rim" x="322" y="269" width="253" height="90" rx="39.5" ry="45" fill="#4e5460" stroke="#303541"/>
+      <rect id="menu-well-wall" x="327" y="274" width="243" height="80" rx="34.5" ry="40" fill="#292e38"/>
+      <rect id="menu-well-floor" x="337" y="284" width="223" height="60" rx="24.5" ry="30" fill="#3b414d"/>
+    </g>
+    <use href="#menu-button" x="390" y="313.25"/>
+    <use href="#menu-button" x="512" y="313.25"/>
+    <g transform="translate(0 77) scale(1 1.166667) translate(0 -77)" fill="#263645" font-family="Arial, sans-serif" font-size="15" font-weight="bold" letter-spacing=".65" text-anchor="middle">
+      <text x="396" y="226" textLength="73" lengthAdjust="spacingAndGlyphs">SELECT</text>
+      <text x="514" y="226" textLength="54" lengthAdjust="spacingAndGlyphs">START</text>
+    </g>
+  </g>
+
+  <g id="turbo">
+    <path d="M674 126V101.5H695M773 101.5H792V126" fill="none" stroke="#9b3b3d" stroke-width="1.5"/>
+    <text x="734" y="111" fill="#9b3236" font-family="Arial, sans-serif" font-size="21" text-anchor="middle" textLength="68" lengthAdjust="spacingAndGlyphs">TURBO</text>
+    <rect x="618.5" y="126" width="218" height="99" rx="49.5" fill="url(#well)" stroke="#3b3c44" stroke-width="2"/>
+    <use href="#turbo-button" x="668" y="175.5"/>
+    <use href="#turbo-button" x="787" y="175.5"/>
+  </g>
+
+  <g id="action-buttons">
+    <rect x="692" y="231" width="72" height="37.5" rx="16" ry="18.75" fill="#202a37"/>
+    <text x="729" y="261.5" fill="#ececdf" font-family="Arial, sans-serif" font-size="32.5" font-weight="bold" text-anchor="middle" textLength="44" lengthAdjust="spacingAndGlyphs">BA</text>
+    <use href="#action-button" x="668" y="318" aria-label="B"/>
+    <use href="#action-button" x="787" y="318" aria-label="A"/>
+  </g>
+</svg>

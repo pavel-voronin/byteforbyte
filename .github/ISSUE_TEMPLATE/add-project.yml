@@ -1,12 +1,18 @@
 name: Add a project
 description: Suggest a byte-for-byte restoration for the catalog.
-title: "[Project] "
 body:
   - type: input
     id: project_name
     attributes:
       label: Project name
       placeholder: Dangerous Dave in the Haunted Mansion
+    validations:
+      required: true
+  - type: input
+    id: repository
+    attributes:
+      label: Project repository URL
+      placeholder: https://github.com/owner/project
     validations:
       required: true
   - type: input
@@ -26,12 +32,30 @@ body:
     validations:
       required: true
   - type: input
+    id: technologies
+    attributes:
+      label: Technology stack
+      description: List languages, engines or key build tools for the matching release, separated by commas.
+      placeholder: "C, x86 Assembly, Borland C++ 2.0"
+  - type: input
     id: credit
     attributes:
-      label: Restoration team
+      label: Restorer
       placeholder: Name or GitHub handle
     validations:
       required: true
+  - type: input
+    id: credit_url
+    attributes:
+      label: Restorer URL
+      description: Link to the restorer’s GitHub profile or website, if available.
+      placeholder: https://github.com/owner
+  - type: input
+    id: release_year
+    attributes:
+      label: Original release year
+      description: Enter the four-digit year of the version that matches byte for byte, if known.
+      placeholder: "1996"
   - type: input
     id: target
     attributes:
@@ -41,12 +65,20 @@ body:
     validations:
       required: true
   - type: input
-    id: repository
+    id: play_url
     attributes:
-      label: Project repository URL
-      placeholder: https://github.com/owner/project
+      label: Playable version URL
+      description: Link to the version that can be played in a browser, if available.
+      placeholder: https://example.org/play
+  - type: upload
+    id: screenshot
+    attributes:
+      label: Screenshot
+      description: >
+        Attach one PNG, JPEG, or WebP screenshot of the restored game or program for its catalog card.
+        Use the original aspect ratio. A clear in-game or in-app view without browser chrome is preferred.
     validations:
-      required: true
+      accept: ".png,.jpg,.jpeg,.webp"
   - type: input
     id: evidence
     attributes:

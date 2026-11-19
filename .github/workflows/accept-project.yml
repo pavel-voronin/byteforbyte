@@ -23,6 +23,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Install screenshot encoder
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y python3-pil
       - run: node scripts/accept-project.mjs
         env:
           GITHUB_TOKEN: ${{ github.token }}
