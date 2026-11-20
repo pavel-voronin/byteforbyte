@@ -4,12 +4,13 @@ on:
     types: [labeled]
 
 permissions:
+  actions: write
   issues: read
   contents: write
   pull-requests: write
 
 jobs:
-  propose:
+  accept:
     # 98917699 is the GitHub account ID of PaulArgent.
     if: >-
       github.event.label.name == 'accepted' &&

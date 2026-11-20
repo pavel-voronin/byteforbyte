@@ -213,24 +213,37 @@ async function main() {
       body: data === undefined ? undefined : JSON.stringify(data)
     });
     if (allowMissing && response.status === 404) return null;
-    requireValue(response.ok, method + " " + path + " failed (" + response.status + "). " +
-      ((await response.clone().json().catch(() => null))?.message ?? ""));
-    return response.json();
+    if (!response.ok) {
+      const error = await response.json().catch(() => null);
+      throw new Error(method + " " + path + " failed (" + response.status + "). " + (error?.message ?? ""));
+    }
+    return response.status === 204 ? null : response.json();
   }
+  async function publish() {
+    const run = await api("/actions/workflows/catalog.yml/dispatches", "POST", { ref: base });
+    console.log("Started catalog publication for " + base + (run?.html_url ? ": " + run.html_url : "."));
+  }
+
   const number = event.issue.number;
   requireValue(Number.isSafeInteger(number) && number > 0, "Invalid issue number.");
+  const branch = branchPrefix + number;
+  const previous = await api("/pulls?" + new URLSearchParams({ state: "all", head: owner + ":" + branch, base }));
+  const existing = previous.find((pull) => pull.user?.login === "github-actions[bot]" &&
+    pull.head.ref === branch && pull.head.repo?.full_name === owner + "/" + repo);
+  if (existing?.state === "closed") {
+    const pull = await api("/pulls/" + existing.number);
+    if (pull.merged) await publish();
+    else console.log("The catalog pull request was closed: " + pull.html_url);
+    return;
+  }
+  requireValue(existing || previous.length === 0, "The proposal branch is already used by another pull request.");
+
   const current = await api("/issues/" + number);
   if (current.state !== "open" || current.pull_request || !current.labels.some(({ name }) => name === "accepted")) {
     console.log("Issue is no longer an accepted, open proposal.");
     return;
   }
   requireValue(current.body === event.issue.body, "The issue changed after acceptance. Review it and apply accepted again.");
-  const branch = branchPrefix + number;
-  const previous = await api("/pulls?" + new URLSearchParams({ state: "all", head: owner + ":" + branch }));
-  if (previous.length) {
-    console.log("A pull request already exists: " + previous[0].html_url);
-    return;
-  }
 
   const catalog = JSON.parse(await readFile(catalogPath, "utf8"));
   const { screenshotUrl, ...project } = projectFromIssue(event.issue, catalog);
@@ -239,7 +252,8 @@ async function main() {
   for (let page = 1; ; page++) {
     const pulls = await api("/pulls?" + new URLSearchParams({ state: "open", base, per_page: "100", page }));
     for (const pull of pulls) {
-      if (pull.head.repo?.full_name !== owner + "/" + repo || !pull.head.ref.startsWith(branchPrefix)) continue;
+      if (pull.head.repo?.full_name !== owner + "/" + repo || !pull.head.ref.startsWith(branchPrefix) ||
+          pull.head.ref === branch) continue;
       const incomingId = "proposal-" + pull.head.ref.slice(branchPrefix.length);
       const file = await api("/contents/" + catalogPath + "?ref=" + encodeURIComponent(pull.head.sha));
       const inside = JSON.parse(Buffer.from(file.content, "base64").toString("utf8"));
@@ -255,33 +269,33 @@ async function main() {
 
   const branchPath = "/git/ref/heads/" + branch;
   const baseSha = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+  const baseTree = execFileSync("git", ["rev-parse", "HEAD^{tree}"], { encoding: "utf8" }).trim();
+  const tree = [{ path: catalogPath, mode: "100644", type: "blob", content: next }];
+  if (screenshot) {
+    const blob = await api("/git/blobs", "POST", { content: screenshot.data.toString("base64"), encoding: "base64" });
+    tree.push({ path: screenshot.path, mode: "100644", type: "blob", sha: blob.sha });
+  }
+  const updated = await api("/git/trees", "POST", { base_tree: baseTree, tree });
   const remoteBranch = await api(branchPath, "GET", undefined, true);
+  let headSha;
   if (remoteBranch && remoteBranch.object.sha !== baseSha) {
-    // Resume a completed commit if PR creation failed on the previous attempt.
-    const ref = "?ref=" + encodeURIComponent(remoteBranch.object.sha);
-    const prior = await api("/contents/" + catalogPath + ref);
-    const priorScreenshot = screenshot && await api("/contents/" + screenshot.path + ref, "GET", undefined, true);
-    requireValue(Buffer.from(prior.content, "base64").toString("utf8") === next
-      && (!screenshot || (priorScreenshot && Buffer.from(priorScreenshot.content, "base64").equals(screenshot.data))),
-    "The proposal branch already has different changes.");
+    headSha = remoteBranch.object.sha;
+    // Only resume if the entire commit matches the catalog changes we just built.
+    const prior = await api("/git/commits/" + headSha);
+    requireValue(prior.tree.sha === updated.sha && prior.parents.length === 1 && prior.parents[0].sha === baseSha,
+      "The proposal branch differs from the validated catalog changes or is based on an older commit.");
   } else {
-    const baseTree = execFileSync("git", ["rev-parse", "HEAD^{tree}"], { encoding: "utf8" }).trim();
-    const tree = [{ path: catalogPath, mode: "100644", type: "blob", content: next }];
-    if (screenshot) {
-      const blob = await api("/git/blobs", "POST", { content: screenshot.data.toString("base64"), encoding: "base64" });
-      tree.push({ path: screenshot.path, mode: "100644", type: "blob", sha: blob.sha });
-    }
-    const updated = await api("/git/trees", "POST", { base_tree: baseTree, tree });
     const commit = await api("/git/commits", "POST", {
       message: "Add catalog project from issue #" + number, tree: updated.sha, parents: [baseSha]
     });
+    headSha = commit.sha;
     if (remoteBranch) {
       await api("/git/refs/heads/" + branch, "PATCH", { sha: commit.sha, force: false });
     } else {
       await api("/git/refs", "POST", { ref: "refs/heads/" + branch, sha: commit.sha });
     }
   }
-  const pr = await api("/pulls", "POST", {
+  const pr = existing ?? await api("/pulls", "POST", {
     title: "Add catalog project from issue #" + number,
     head: branch,
     base,
@@ -289,7 +303,12 @@ async function main() {
       + (screenshot ? "Includes the optimized WebP screenshot for the catalog card.\n\n" : "")
       + "Closes #" + number
   });
-  console.log("Created " + pr.html_url);
+  const currentBase = await api("/git/ref/heads/" + base);
+  requireValue(currentBase.object.sha === baseSha, "The base branch changed during validation. Review " + pr.html_url);
+  const merged = await api("/pulls/" + pr.number + "/merge", "PUT", { sha: headSha, merge_method: "squash" });
+  requireValue(merged.merged, "GitHub did not merge " + pr.html_url + ". " + (merged.message ?? ""));
+  console.log("Merged " + pr.html_url);
+  await publish();
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
