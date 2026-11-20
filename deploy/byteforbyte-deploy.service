@@ -1,15 +1,17 @@
 [Unit]
-Description=Install the verified byteforbyte catalog from GitHub
-Wants=network-online.target
+Description=Receive verified Byte for Byte builds from GitHub Actions
 After=network-online.target
 
 [Service]
-Type=oneshot
 User=byteforbyte-deploy
 Group=byteforbyte-deploy
-ExecStart=/usr/local/libexec/byteforbyte-sync
+ExecStart=/usr/bin/python3 /usr/local/libexec/byteforbyte-deploy.py
+Restart=on-failure
 NoNewPrivileges=yes
 PrivateTmp=yes
 ProtectSystem=strict
 ProtectHome=yes
 ReadWritePaths=/srv/byteforbyte/public /srv/byteforbyte/staging
+
+[Install]
+WantedBy=multi-user.target
