@@ -92,7 +92,8 @@ class CatalogUpload(BaseHTTPRequestHandler):
 
         try:
             publish_catalog(html)
-        except OSError:
+        except OSError as error:
+            self.log_error("Catalog installation failed: %s", error)
             self.send_error(500, "Could not install catalog")
             return
         self.send_response(200)

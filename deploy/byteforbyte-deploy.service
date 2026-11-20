@@ -11,7 +11,8 @@ NoNewPrivileges=yes
 PrivateTmp=yes
 ProtectSystem=strict
 ProtectHome=yes
-ReadWritePaths=/srv/byteforbyte/public /srv/byteforbyte/staging
+# A single mount lets the receiver rename from staging to public atomically.
+ReadWritePaths=/srv/byteforbyte
 
 [Install]
 WantedBy=multi-user.target
