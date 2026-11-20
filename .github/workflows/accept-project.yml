@@ -10,7 +10,10 @@ permissions:
 
 jobs:
   propose:
-    if: github.event.label.name == 'accepted' && github.event.sender.login == github.repository_owner
+    # 98917699 is the GitHub account ID of PaulArgent.
+    if: >-
+      github.event.label.name == 'accepted' &&
+      (github.event.sender.login == github.repository_owner || github.event.sender.id == 98917699)
     concurrency:
       group: accept-catalog-project
       queue: max

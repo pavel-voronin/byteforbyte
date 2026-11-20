@@ -5,6 +5,7 @@ import { pathToFileURL } from "node:url";
 const catalogPath = "data/catalog.json";
 const screenshotDirectory = "assets/screenshots";
 const branchPrefix = "catalog/issue-";
+const paulArgentId = 98917699;
 const technologyField = "Technology stack";
 const releaseYearField = "Original release year";
 const screenshotField = "Screenshot";
@@ -197,8 +198,9 @@ export function assertUnique(project, catalog) {
 async function main() {
   const event = JSON.parse(await readFile(process.env.GITHUB_EVENT_PATH, "utf8"));
   const [owner, repo] = process.env.GITHUB_REPOSITORY.split("/");
-  requireValue(event.action === "labeled" && event.label?.name === "accepted" && event.sender?.login === owner,
-    "Only the repository owner can accept a project.");
+  const canAccept = event.sender?.login === owner || event.sender?.id === paulArgentId;
+  requireValue(event.action === "labeled" && event.label?.name === "accepted" && canAccept,
+    "Only the repository owner and PaulArgent can accept a project.");
   const token = process.env.GITHUB_TOKEN;
   requireValue(token, "Missing Actions token.");
   const base = event.repository.default_branch;
