@@ -171,5 +171,25 @@
     ],
     "match": "byte",
     "added": "2026-11-23"
+  },
+  {
+    "id": "proposal-6",
+    "title": "Pools of Darkness",
+    "repository": "https://github.com/talonius/pools-of-darkness",
+    "platform": "DOS",
+    "kind": "game",
+    "credit": "talonius",
+    "target": "SSI DOS v1.1 / GAME.EXE, GAME.OVR, CONTROL.EXE, STARTUP.EXE",
+    "evidence": "https://github.com/talonius/pools-of-darkness/blob/f24a100dc00a302aa1962953ba821c7d768d3c3f/build.sh#L49-L52",
+    "creditUrl": "https://github.com/talonius",
+    "technologies": [
+      "Pascal",
+      "x86 Assembly",
+      "Turbo Pascal 6.0",
+      "TASM",
+      "EXEPACK"
+    ],
+    "match": "byte",
+    "added": "2026-11-23"
   }
 ]
