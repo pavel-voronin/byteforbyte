@@ -191,5 +191,25 @@
     ],
     "match": "byte",
     "added": "2026-11-23"
+  },
+  {
+    "id": "proposal-7",
+    "title": "Gateway to the Savage Frontier",
+    "repository": "https://github.com/talonius/gateway-to-the-savage-frontier",
+    "platform": "DOS",
+    "kind": "game",
+    "credit": "talonius",
+    "target": "SSI DOS v1.2 / GAME.EXE, GAME.OVR",
+    "evidence": "https://github.com/talonius/gateway-to-the-savage-frontier/blob/b30db5e7aa043e7b947f5ef1e0997ccd39a6f811/build.sh#L49-L50",
+    "creditUrl": "https://github.com/talonius",
+    "technologies": [
+      "Pascal",
+      "x86 Assembly",
+      "Turbo Pascal 6.0",
+      "TASM",
+      "EXEPACK"
+    ],
+    "match": "byte",
+    "added": "2026-11-23"
   }
 ]
