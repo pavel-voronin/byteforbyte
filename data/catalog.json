@@ -232,5 +232,25 @@
     ],
     "match": "byte",
     "added": "2026-11-23"
+  },
+  {
+    "id": "proposal-9",
+    "title": "Champions of Krynn",
+    "repository": "https://github.com/talonius/champions-of-krynn",
+    "platform": "DOS",
+    "kind": "game",
+    "credit": "talonius",
+    "target": "SSI DOS v1.2 / START.EXE, GAME.OVR",
+    "evidence": "https://github.com/talonius/champions-of-krynn/blob/bc5b8679b5ba2b5effa686de2ae07143c7019812/build.sh#L49-L50",
+    "creditUrl": "https://github.com/talonius",
+    "technologies": [
+      "Pascal",
+      "x86 Assembly",
+      "Turbo Pascal 6.0",
+      "TASM",
+      "EXEPACK"
+    ],
+    "match": "byte",
+    "added": "2026-11-23"
   }
 ]
