@@ -292,5 +292,25 @@
     ],
     "match": "byte",
     "added": "2026-11-23"
+  },
+  {
+    "id": "proposal-12",
+    "title": "Buck Rogers: Matrix Cubed",
+    "repository": "https://github.com/talonius/buck-rogers-matrix-cubed",
+    "platform": "DOS",
+    "kind": "game",
+    "credit": "talonius",
+    "target": "SSI DOS v1.0 / START.EXE, GAME.OVR",
+    "evidence": "https://github.com/talonius/buck-rogers-matrix-cubed/blob/d8f62f6fd26d7c285d8ceaa54594a1cb2ca71e9a/build.sh#L52-L53",
+    "creditUrl": "https://github.com/talonius",
+    "technologies": [
+      "Pascal",
+      "x86 Assembly",
+      "Turbo Pascal 6.0",
+      "TASM",
+      "EXEPACK"
+    ],
+    "match": "byte",
+    "added": "2026-11-23"
   }
 ]
