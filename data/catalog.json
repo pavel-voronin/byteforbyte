@@ -211,5 +211,26 @@
     ],
     "match": "byte",
     "added": "2026-11-23"
+  },
+  {
+    "id": "proposal-8",
+    "title": "Treasures of the Savage Frontier",
+    "repository": "https://github.com/talonius/treasures-of-the-savage-frontier",
+    "platform": "DOS",
+    "kind": "game",
+    "credit": "talonius",
+    "target": "SSI DOS v1.0 / GAME.EXE, GAME.OVR, CONTROL.EXE, STARTUP.EXE",
+    "evidence": "https://github.com/talonius/treasures-of-the-savage-frontier/blob/100cc5861d7c59c4394e550f16be9c479ad7abad/build.sh#L53-L56",
+    "creditUrl": "https://github.com/talonius",
+    "technologies": [
+      "Pascal",
+      "x86 Assembly",
+      "Turbo Pascal 5.5",
+      "Turbo Pascal 6.0",
+      "TASM",
+      "EXEPACK"
+    ],
+    "match": "byte",
+    "added": "2026-11-23"
   }
 ]
