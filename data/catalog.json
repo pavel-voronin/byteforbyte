@@ -272,5 +272,25 @@
     ],
     "match": "byte",
     "added": "2026-11-23"
+  },
+  {
+    "id": "proposal-11",
+    "title": "Buck Rogers: Countdown to Doomsday",
+    "repository": "https://github.com/talonius/buck-rogers-countdown-to-doomsday",
+    "platform": "DOS",
+    "kind": "game",
+    "credit": "talonius",
+    "target": "SSI DOS v1.3 / START.EXE, GAME.OVR",
+    "evidence": "https://github.com/talonius/buck-rogers-countdown-to-doomsday/blob/b5ce3f8332f07d0e3f1e1ff26370db70494cdae2/build.sh#L49-L50",
+    "creditUrl": "https://github.com/talonius",
+    "technologies": [
+      "Pascal",
+      "x86 Assembly",
+      "Turbo Pascal 5.5",
+      "TASM",
+      "EXEPACK"
+    ],
+    "match": "byte",
+    "added": "2026-11-23"
   }
 ]
