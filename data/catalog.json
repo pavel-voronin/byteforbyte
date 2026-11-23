@@ -252,5 +252,25 @@
     ],
     "match": "byte",
     "added": "2026-11-23"
+  },
+  {
+    "id": "proposal-10",
+    "title": "Death Knights of Krynn",
+    "repository": "https://github.com/talonius/death-knights-of-krynn",
+    "platform": "DOS",
+    "kind": "game",
+    "credit": "talonius",
+    "target": "SSI DOS v1.1 / START.EXE, GAME.OVR",
+    "evidence": "https://github.com/talonius/death-knights-of-krynn/blob/0ae5c4a3c29ecc90c3dc7636b9609381260f98f7/build.sh#L49-L50",
+    "creditUrl": "https://github.com/talonius",
+    "technologies": [
+      "Pascal",
+      "x86 Assembly",
+      "Turbo Pascal 6.0",
+      "TASM",
+      "EXEPACK"
+    ],
+    "match": "byte",
+    "added": "2026-11-23"
   }
 ]
