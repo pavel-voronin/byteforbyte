@@ -4,7 +4,14 @@
     "title": "Borland C++ 2.0",
     "description": "C and C++ development toolchain for DOS.",
     "releaseYear": 1991,
-    "technologies": ["C", "x86 Assembly", "Borland C++ 2.0", "Turbo C 2.01", "TASM", "TLINK"],
+    "technologies": [
+      "C",
+      "x86 Assembly",
+      "Borland C++ 2.0",
+      "Turbo C 2.01",
+      "TASM",
+      "TLINK"
+    ],
     "platform": "DOS",
     "kind": "software",
     "credit": "abedegno",
@@ -20,7 +27,14 @@
     "title": "Dangerous Dave in the Haunted Mansion",
     "description": "Horror-themed platformer from Softdisk.",
     "releaseYear": 1991,
-    "technologies": ["C", "x86 Assembly", "Borland C++ 2.0", "TASM", "TLINK", "LZEXE"],
+    "technologies": [
+      "C",
+      "x86 Assembly",
+      "Borland C++ 2.0",
+      "TASM",
+      "TLINK",
+      "LZEXE"
+    ],
     "platform": "DOS",
     "kind": "game",
     "credit": "abedegno",
@@ -36,9 +50,16 @@
     "title": "King’s Bounty 2",
     "description": "Unofficial turn-based strategy game for DOS by Sergey Prokofiev.",
     "playUrl": "https://kb2.pavelvoronin.com/?mode=classic",
-    "screenshot": { "file": "kings-bounty-2.webp", "width": 600, "height": 330 },
+    "screenshot": {
+      "file": "kings-bounty-2.webp",
+      "width": 600,
+      "height": 330
+    },
     "releaseYear": 1993,
-    "technologies": ["Pascal", "Turbo Pascal 7.0"],
+    "technologies": [
+      "Pascal",
+      "Turbo Pascal 7.0"
+    ],
     "platform": "DOS",
     "kind": "game",
     "credit": "Pavel Voronin",
@@ -54,7 +75,11 @@
     "title": "Super Mario 64",
     "description": "3D platformer for Nintendo 64.",
     "releaseYear": 1996,
-    "technologies": ["C", "MIPS Assembly", "SGI IDO"],
+    "technologies": [
+      "C",
+      "MIPS Assembly",
+      "SGI IDO"
+    ],
     "platform": "Nintendo 64",
     "kind": "game",
     "credit": "n64decomp",
@@ -70,7 +95,13 @@
     "title": "Duke Nukem 3D v1.3D",
     "description": "First-person shooter for DOS by 3D Realms.",
     "releaseYear": 1996,
-    "technologies": ["C", "x86 Assembly", "Build Engine", "Watcom C/C++", "DOS/4GW"],
+    "technologies": [
+      "C",
+      "x86 Assembly",
+      "Build Engine",
+      "Watcom C/C++",
+      "DOS/4GW"
+    ],
     "platform": "DOS",
     "kind": "game",
     "credit": "abedegno",
@@ -80,5 +111,25 @@
     "evidence": "https://github.com/abedegno/duke3d-1.3d#verification-and-provenance",
     "match": "byte",
     "added": "2026-11-18"
+  },
+  {
+    "id": "proposal-3",
+    "title": "Pool of Radiance",
+    "repository": "https://github.com/talonius/pool-of-radiance",
+    "platform": "DOS",
+    "kind": "game",
+    "credit": "talonius",
+    "target": "SSI DOS v1.3 / START.EXE, GAME.OVR",
+    "evidence": "https://github.com/talonius/pool-of-radiance/blob/74f95299c6e777817ac99e2612682e5ff52cc6c1/build.sh#L49-L50",
+    "creditUrl": "https://github.com/talonius",
+    "technologies": [
+      "Pascal",
+      "x86 Assembly",
+      "Turbo Pascal 6.0",
+      "TASM",
+      "EXEPACK"
+    ],
+    "match": "byte",
+    "added": "2026-11-23"
   }
 ]
