@@ -151,5 +151,25 @@
     ],
     "match": "byte",
     "added": "2026-11-23"
+  },
+  {
+    "id": "proposal-5",
+    "title": "Secret of the Silver Blades",
+    "repository": "https://github.com/talonius/secret-of-the-silver-blades",
+    "platform": "DOS",
+    "kind": "game",
+    "credit": "talonius",
+    "target": "SSI DOS v1.3 / START.EXE, GAME.OVR",
+    "evidence": "https://github.com/talonius/secret-of-the-silver-blades/blob/2f15fd9d908c06bb737532ee561b071eb61b7c2b/build.sh#L49-L50",
+    "creditUrl": "https://github.com/talonius",
+    "technologies": [
+      "Pascal",
+      "x86 Assembly",
+      "Turbo Pascal 5.5",
+      "TASM",
+      "EXEPACK"
+    ],
+    "match": "byte",
+    "added": "2026-11-23"
   }
 ]
