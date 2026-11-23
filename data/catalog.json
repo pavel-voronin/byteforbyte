@@ -131,5 +131,25 @@
     ],
     "match": "byte",
     "added": "2026-11-23"
+  },
+  {
+    "id": "proposal-4",
+    "title": "Curse of the Azure Bonds",
+    "repository": "https://github.com/talonius/curse-of-the-azure-bonds",
+    "platform": "DOS",
+    "kind": "game",
+    "credit": "talonius",
+    "target": "SSI DOS v1.3 / START.EXE, GAME.OVR",
+    "evidence": "https://github.com/talonius/curse-of-the-azure-bonds/blob/5c323109da3591e5daaa69a08688f5e34bbaa95a/build.sh#L47-L48",
+    "creditUrl": "https://github.com/talonius",
+    "technologies": [
+      "Pascal",
+      "x86 Assembly",
+      "Turbo Pascal 6.0",
+      "TASM",
+      "EXEPACK"
+    ],
+    "match": "byte",
+    "added": "2026-11-23"
   }
 ]
