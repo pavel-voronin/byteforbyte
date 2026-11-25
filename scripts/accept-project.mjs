@@ -301,7 +301,7 @@ async function main() {
     base,
     body: "Adds the accepted project to the catalog.\n\n"
       + (screenshot ? "Includes the optimized WebP screenshot for the catalog card.\n\n" : "")
-      + "Closes #" + number
+      + "Catalog submission: #" + number
   });
   const currentBase = await api("/git/ref/heads/" + base);
   requireValue(currentBase.object.sha === baseSha, "The base branch changed during validation. Review " + pr.html_url);

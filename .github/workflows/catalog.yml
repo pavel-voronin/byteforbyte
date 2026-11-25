@@ -39,12 +39,15 @@ jobs:
     permissions:
       contents: read
       id-token: write
+      issues: write
+      pull-requests: read
     steps:
       - uses: actions/download-artifact@v4
         with:
           name: byteforbyte
           path: dist/
       - name: Deploy the current main build
+        id: publish
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
@@ -63,3 +66,30 @@ jobs:
           curl --silent --show-error --fail-with-body --max-time 30 \
             --header "Authorization: Bearer $token" --header 'Content-Type: text/html' \
             --upload-file dist/index.html "$endpoint"
+          echo "published=true" >> "$GITHUB_OUTPUT"
+      - name: Close published catalog submissions
+        if: steps.publish.outputs.published == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          live="$RUNNER_TEMP/published-catalog.html"
+          curl --silent --show-error --fail --max-time 15 --retry 3 \
+            --output "$live" "https://byteforbyte.dev/?revision=$GITHUB_SHA"
+          grep -Fxq "<meta name=\"catalog-revision\" content=\"$GITHUB_SHA\">" "$live"
+          published=$(sed -n 's|^<script id="site-data" type="application/json">\(.*\)</script>$|\1|p' "$live" |
+            jq -cre '.projects | map(.id | select(test("^proposal-[1-9][0-9]*$")) | ltrimstr("proposal-"))')
+          merged=$(gh api --paginate "repos/$GH_REPO/pulls?state=closed&base=main&per_page=100" |
+            jq -cs '[.[][] | select(.merged_at != null and .user.login == "github-actions[bot]" and
+              .head.repo.full_name == .base.repo.full_name) | .head.ref |
+              select(test("^catalog/issue-[1-9][0-9]*$")) | ltrimstr("catalog/issue-")]')
+          issues=$(gh api --paginate "repos/$GH_REPO/issues?state=open&per_page=100" |
+            jq -r --argjson published "$published" --argjson merged "$merged" '
+              .[] | select(.pull_request == null) | (.number | tostring) as $id |
+              select(($published | index($id)) != null and ($merged | index($id)) != null) | .number')
+          for number in $issues; do
+            gh api --method PATCH "repos/$GH_REPO/issues/$number" \
+              -f state=closed -f state_reason=completed --silent
+            echo "Closed published catalog issue #$number."
+          done
