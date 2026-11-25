@@ -356,5 +356,25 @@
     ],
     "match": "byte",
     "added": "2026-11-23"
+  },
+  {
+    "id": "proposal-14",
+    "title": "Ultima Underworld: The Stygian Abyss",
+    "repository": "https://github.com/abedegno/underworld-exhumed",
+    "platform": "DOS",
+    "kind": "game",
+    "credit": "abedegno",
+    "target": "DOS CD / GOG reference, UW.EXE (GOG build; original EXE required for extraction)",
+    "evidence": "https://github.com/abedegno/underworld-exhumed/blob/54ffea7c08d562176a8edf7398a6ff3fd372a9d2/uw1/docs/LINKING.md#the-exact-link",
+    "creditUrl": "https://github.com/abedegno",
+    "technologies": [
+      "C",
+      "x86 Assembly",
+      "Turbo C++ 1.01",
+      "TASM",
+      "TLINK"
+    ],
+    "match": "byte",
+    "added": "2026-11-23"
   }
 ]
