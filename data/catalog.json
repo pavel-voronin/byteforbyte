@@ -395,5 +395,25 @@
     "releaseYear": 2011,
     "match": "byte",
     "added": "2026-11-27"
+  },
+  {
+    "id": "proposal-30",
+    "title": "Sesame Street: Elmo's Number Journey",
+    "repository": "https://github.com/TheGh0stShip/Sesame-Street-Elmos-Number-Journey-N64",
+    "platform": "Nintendo 64",
+    "kind": "game",
+    "credit": "TheGh0stShip",
+    "target": "USA retail. Full 8 MiB ROM. SHA-256 2f510e2df3e422f2a95711bb4f513e280789dcf299f482ec3175e83eff868c57.",
+    "evidence": "https://github.com/TheGh0stShip/Sesame-Street-Elmos-Number-Journey-N64/blob/2e24ee2917529cc5ef6b8c3853713a9f5ab27796/README.md#the-two-commands",
+    "creditUrl": "https://github.com/TheGh0stShip",
+    "technologies": [
+      "C",
+      "MIPS Assembly",
+      "KMC GCC 2.7.2",
+      "SGI IDO"
+    ],
+    "releaseYear": 1999,
+    "match": "byte",
+    "added": "2026-11-27"
   }
 ]
