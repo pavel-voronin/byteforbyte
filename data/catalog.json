@@ -495,5 +495,25 @@
     "releaseYear": 1998,
     "match": "byte",
     "added": "2026-11-27"
+  },
+  {
+    "id": "proposal-35",
+    "title": "WCW/nWo Revenge",
+    "repository": "https://github.com/soulsdweeb212/wcw-nwo-revenge",
+    "platform": "Nintendo 64",
+    "kind": "game",
+    "credit": "soulsdweeb212",
+    "target": "USA retail. Full 16 MiB ROM. SHA-256 66c137d326565c6f31f992daba8f67c0aee7f025a142dd249d27019708014b60.",
+    "evidence": "https://github.com/soulsdweeb212/wcw-nwo-revenge/blob/bb46030dd2201d9134b0180af951bc66fa5574fa/README.md#build",
+    "creditUrl": "https://github.com/soulsdweeb212",
+    "technologies": [
+      "C",
+      "MIPS Assembly",
+      "KMC GCC 2.7.2",
+      "GNU Binutils"
+    ],
+    "releaseYear": 1998,
+    "match": "byte",
+    "added": "2026-11-27"
   }
 ]
