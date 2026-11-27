@@ -456,5 +456,24 @@
     "releaseYear": 1998,
     "match": "byte",
     "added": "2026-11-27"
+  },
+  {
+    "id": "proposal-33",
+    "title": "Conker's Bad Fur Day",
+    "repository": "https://github.com/sholdee/conker-decomp",
+    "platform": "Nintendo 64",
+    "kind": "game",
+    "credit": "sholdee",
+    "target": "USA retail. Full 64 MiB ROM. SHA-256 32e6a8b970ec12ac5f782344945aa0c98a193832eefb687529d03bab6948714b.",
+    "evidence": "https://github.com/sholdee/conker-decomp/blob/db7de82cfb6ebec077ce54d5182617397f669f88/README.md#building",
+    "creditUrl": "https://github.com/sholdee",
+    "technologies": [
+      "C",
+      "MIPS Assembly",
+      "SGI IDO"
+    ],
+    "releaseYear": 2001,
+    "match": "byte",
+    "added": "2026-11-27"
   }
 ]
