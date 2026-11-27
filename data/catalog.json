@@ -536,5 +536,23 @@
     "releaseYear": 1992,
     "match": "byte",
     "added": "2026-11-27"
+  },
+  {
+    "id": "proposal-45",
+    "title": "Crimsonland",
+    "repository": "https://github.com/banteg/crimson",
+    "platform": "Windows",
+    "kind": "game",
+    "credit": "banteg",
+    "target": "Crimsonland (2003), as its 1.9.93 GOG \"Crimsonland Classic\" release (2011): crimson.exe, crimsonland.exe, crimsonland.RWG, grim.dll",
+    "evidence": "https://github.com/banteg/crimson/tree/master/decomp",
+    "creditUrl": "https://github.com/banteg",
+    "playUrl": "https://crimson.land/play/",
+    "technologies": [
+      "Visual C++ 6"
+    ],
+    "releaseYear": 2003,
+    "match": "byte",
+    "added": "2026-11-27"
   }
 ]
