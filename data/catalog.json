@@ -548,11 +548,6 @@
     "evidence": "https://github.com/banteg/crimson/tree/master/decomp",
     "creditUrl": "https://github.com/banteg",
     "playUrl": "https://crimson.land/play/",
-    "screenshot": {
-      "file": "crimsonland.webp",
-      "width": 320,
-      "height": 180
-    },
     "technologies": [
       "Visual C++ 6"
     ],
