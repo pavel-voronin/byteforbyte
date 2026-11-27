@@ -435,5 +435,26 @@
     "releaseYear": 1999,
     "match": "byte",
     "added": "2026-11-27"
+  },
+  {
+    "id": "proposal-32",
+    "title": "BattleTanx",
+    "repository": "https://github.com/TheGh0stShip/BattleTanx",
+    "platform": "Nintendo 64",
+    "kind": "game",
+    "credit": "TheGh0stShip",
+    "target": "USA Rev 0 (NBXE). Full 8 MiB ROM with rebuilt code and initialized data and assets from the retail ROM. SHA-256 c5b7cf3523de025e3f18e2c8df2deb0eced5613e7c46cb8c6c5a4f22644ead3f.",
+    "evidence": "https://github.com/TheGh0stShip/BattleTanx/blob/093a4fd0734133e64a19a282ab6632e1200bfffb/docs/VERIFICATION.md",
+    "creditUrl": "https://github.com/TheGh0stShip",
+    "technologies": [
+      "C",
+      "MIPS Assembly",
+      "SGI IDO",
+      "KMC GCC 2.7.2",
+      "SN Systems GCC"
+    ],
+    "releaseYear": 1998,
+    "match": "byte",
+    "added": "2026-11-27"
   }
 ]
