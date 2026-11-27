@@ -1,5 +1,8 @@
 import { execFileSync } from "node:child_process";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rmdir, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { setTimeout as delay } from "node:timers/promises";
 import { pathToFileURL } from "node:url";
 
 const catalogPath = "data/catalog.json";
@@ -80,19 +83,46 @@ async function downloadScreenshot(value) {
   throw new Error("Too many redirects while downloading the screenshot.");
 }
 
-async function prepareScreenshot(project, url) {
+async function prepareScreenshot(project, url, checkout) {
   const input = await downloadScreenshot(url);
   const file = project.id + ".webp";
   const path = screenshotDirectory + "/" + file;
-  await mkdir(screenshotDirectory, { recursive: true });
+  await mkdir(join(checkout, screenshotDirectory), { recursive: true });
   const python = process.platform === "win32" ? "py" : "/usr/bin/python3";
   const encoderEnv = { ...process.env };
   delete encoderEnv.GITHUB_TOKEN;
   const output = execFileSync(python, ["scripts/prepare-screenshot.py", path], {
-    input, encoding: "utf8", timeout: 30_000, env: encoderEnv
+    cwd: checkout, input, encoding: "utf8", timeout: 30_000, env: encoderEnv
   });
   project.screenshot = { file, ...JSON.parse(output) };
-  return { path, data: await readFile(path) };
+  return { path, data: await readFile(join(checkout, path)) };
+}
+
+function git(args, options = {}) {
+  return execFileSync("git", args, { encoding: "utf8", ...options }).trim();
+}
+
+async function validateProject(baseSha, issue, checkPending) {
+  const temporary = await mkdtemp(join(tmpdir(), "catalog-accept-"));
+  const checkout = join(temporary, "checkout");
+  let checkedOut = false;
+  try {
+    git(["worktree", "add", "--detach", checkout, baseSha]);
+    checkedOut = true;
+    const path = join(checkout, catalogPath);
+    const catalog = JSON.parse(await readFile(path, "utf8"));
+    const { screenshotUrl, ...project } = projectFromIssue(issue, catalog);
+    assertUnique(project, catalog);
+    await checkPending(project);
+    const screenshot = screenshotUrl ? await prepareScreenshot(project, screenshotUrl, checkout) : null;
+    const content = JSON.stringify([...catalog, project], null, 2) + "\n";
+    await writeFile(path, content);
+    execFileSync(process.execPath, ["build.mjs"], { cwd: checkout, stdio: "inherit" });
+    return { content, project, screenshot };
+  } finally {
+    if (checkedOut) git(["worktree", "remove", "--force", checkout]);
+    await rmdir(temporary);
+  }
 }
 
 function normalize(value) {
@@ -215,7 +245,8 @@ async function main() {
     if (allowMissing && response.status === 404) return null;
     if (!response.ok) {
       const error = await response.json().catch(() => null);
-      throw new Error(method + " " + path + " failed (" + response.status + "). " + (error?.message ?? ""));
+      throw Object.assign(new Error(method + " " + path + " failed (" + response.status + "). " + (error?.message ?? "")),
+        { status: response.status });
     }
     return response.status === 204 ? null : response.json();
   }
@@ -228,87 +259,127 @@ async function main() {
   requireValue(Number.isSafeInteger(number) && number > 0, "Invalid issue number.");
   const branch = branchPrefix + number;
   const previous = await api("/pulls?" + new URLSearchParams({ state: "all", head: owner + ":" + branch, base }));
-  const existing = previous.find((pull) => pull.user?.login === "github-actions[bot]" &&
+  let pr = previous.find((pull) => pull.user?.login === "github-actions[bot]" &&
     pull.head.ref === branch && pull.head.repo?.full_name === owner + "/" + repo);
-  if (existing?.state === "closed") {
-    const pull = await api("/pulls/" + existing.number);
-    if (pull.merged) await publish();
-    else console.log("The catalog pull request was closed: " + pull.html_url);
-    return;
+  requireValue(pr || previous.length === 0, "The proposal branch is already used by another pull request.");
+
+  async function readCatalog(sha) {
+    const file = await api("/contents/" + catalogPath + "?ref=" + encodeURIComponent(sha));
+    return JSON.parse(Buffer.from(file.content, "base64").toString("utf8"));
   }
-  requireValue(existing || previous.length === 0, "The proposal branch is already used by another pull request.");
-
-  const current = await api("/issues/" + number);
-  if (current.state !== "open" || current.pull_request || !current.labels.some(({ name }) => name === "accepted")) {
-    console.log("Issue is no longer an accepted, open proposal.");
-    return;
-  }
-  requireValue(current.body === event.issue.body, "The issue changed after acceptance. Review it and apply accepted again.");
-
-  const catalog = JSON.parse(await readFile(catalogPath, "utf8"));
-  const { screenshotUrl, ...project } = projectFromIssue(event.issue, catalog);
-  assertUnique(project, catalog);
-
-  for (let page = 1; ; page++) {
-    const pulls = await api("/pulls?" + new URLSearchParams({ state: "open", base, per_page: "100", page }));
-    for (const pull of pulls) {
-      if (pull.head.repo?.full_name !== owner + "/" + repo || !pull.head.ref.startsWith(branchPrefix) ||
-          pull.head.ref === branch) continue;
-      const incomingId = "proposal-" + pull.head.ref.slice(branchPrefix.length);
-      const file = await api("/contents/" + catalogPath + "?ref=" + encodeURIComponent(pull.head.sha));
-      const inside = JSON.parse(Buffer.from(file.content, "base64").toString("utf8"));
-      assertUnique(project, inside.filter((item) => item.id === incomingId));
+  async function checkPending(project) {
+    for (let page = 1; ; page++) {
+      const pulls = await api("/pulls?" + new URLSearchParams({ state: "open", base, per_page: "100", page }));
+      for (const pull of pulls) {
+        if (pull.head.repo?.full_name !== owner + "/" + repo || !pull.head.ref.startsWith(branchPrefix) ||
+            pull.head.ref === branch) continue;
+        const incomingId = "proposal-" + pull.head.ref.slice(branchPrefix.length);
+        const inside = await readCatalog(pull.head.sha);
+        assertUnique(project, inside.filter((item) => item.id === incomingId));
+      }
+      if (pulls.length < 100) break;
     }
-    if (pulls.length < 100) break;
   }
 
-  const screenshot = screenshotUrl ? await prepareScreenshot(project, screenshotUrl) : null;
-  const next = JSON.stringify([...catalog, project], null, 2) + "\n";
-  await writeFile(catalogPath, next);
-  execFileSync(process.execPath, ["build.mjs"], { stdio: "inherit" });
-
+  const basePath = "/git/ref/heads/" + base;
   const branchPath = "/git/ref/heads/" + branch;
-  const baseSha = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
-  const baseTree = execFileSync("git", ["rev-parse", "HEAD^{tree}"], { encoding: "utf8" }).trim();
-  const tree = [{ path: catalogPath, mode: "100644", type: "blob", content: next }];
-  if (screenshot) {
-    const blob = await api("/git/blobs", "POST", { content: screenshot.data.toString("base64"), encoding: "base64" });
-    tree.push({ path: screenshot.path, mode: "100644", type: "blob", sha: blob.sha });
-  }
-  const updated = await api("/git/trees", "POST", { base_tree: baseTree, tree });
-  const remoteBranch = await api(branchPath, "GET", undefined, true);
-  let headSha;
-  if (remoteBranch && remoteBranch.object.sha !== baseSha) {
-    headSha = remoteBranch.object.sha;
-    // Only resume if the entire commit matches the catalog changes we just built.
-    const prior = await api("/git/commits/" + headSha);
-    requireValue(prior.tree.sha === updated.sha && prior.parents.length === 1 && prior.parents[0].sha === baseSha,
-      "The proposal branch differs from the validated catalog changes or is based on an older commit.");
-  } else {
-    const commit = await api("/git/commits", "POST", {
-      message: "Add catalog project from issue #" + number, tree: updated.sha, parents: [baseSha]
-    });
-    headSha = commit.sha;
-    if (remoteBranch) {
-      await api("/git/refs/heads/" + branch, "PATCH", { sha: commit.sha, force: false });
-    } else {
-      await api("/git/refs", "POST", { ref: "refs/heads/" + branch, sha: commit.sha });
+  const attempts = 5;
+  let validatedHead;
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    if (pr) {
+      pr = await api("/pulls/" + pr.number);
+      if (pr.state === "closed") {
+        if (pr.merged) await publish();
+        else console.log("The catalog pull request was closed: " + pr.html_url);
+        return;
+      }
+      requireValue(pr.base.ref === base && pr.head.ref === branch &&
+        pr.head.repo?.full_name === owner + "/" + repo, "The proposal pull request targets a different branch.");
     }
+    const current = await api("/issues/" + number);
+    if (current.state !== "open" || current.pull_request || !current.labels.some(({ name }) => name === "accepted")) {
+      console.log("Issue is no longer an accepted, open proposal.");
+      return;
+    }
+    requireValue(current.body === event.issue.body, "The issue changed after acceptance. Review it and apply accepted again.");
+
+    git(["fetch", "--no-tags", "origin", "refs/heads/" + base]);
+    const baseSha = git(["rev-parse", "FETCH_HEAD"]);
+    const baseTree = git(["rev-parse", baseSha + "^{tree}"]);
+    const { content, project, screenshot } = await validateProject(baseSha, event.issue, checkPending);
+    const files = [];
+    if (screenshot) {
+      const blob = await api("/git/blobs", "POST", { content: screenshot.data.toString("base64"), encoding: "base64" });
+      files.push({ path: screenshot.path, mode: "100644", type: "blob", sha: blob.sha });
+    }
+    const createTree = (tree, catalog) => api("/git/trees", "POST", {
+      base_tree: tree,
+      tree: [{ path: catalogPath, mode: "100644", type: "blob", content: catalog }, ...files]
+    });
+    const updated = await createTree(baseTree, content);
+    const remoteBranch = await api(branchPath, "GET", undefined, true);
+    const oldHead = remoteBranch?.object.sha;
+    let prior;
+    if (oldHead && oldHead !== baseSha) {
+      prior = await api("/git/commits/" + oldHead);
+      if (oldHead !== validatedHead && prior.tree.sha !== updated.sha) {
+        const oldBase = prior.parents[0]?.sha;
+        requireValue(oldBase, "The proposal branch has no base commit.");
+        const oldCatalog = await readCatalog(oldBase);
+        const { screenshotUrl, ...oldProject } = projectFromIssue(event.issue, oldCatalog);
+        if (screenshot) oldProject.screenshot = project.screenshot;
+        const parent = await api("/git/commits/" + oldBase);
+        const expected = await createTree(parent.tree.sha, JSON.stringify([...oldCatalog, oldProject], null, 2) + "\n");
+        requireValue(prior.tree.sha === expected.sha, "The proposal branch contains changes outside the validated submission.");
+      }
+    }
+    if (pr) requireValue(oldHead, "The approved pull request has no proposal branch.");
+    let headSha = oldHead;
+    if (!prior || prior.parents[0]?.sha !== baseSha || prior.tree.sha !== updated.sha) {
+      // Keep the previous proposal head as a parent so ref updates remain fast-forward.
+      const parents = prior ? [baseSha, oldHead] : [baseSha];
+      const commit = await api("/git/commits", "POST", {
+        message: "Add catalog project from issue #" + number, tree: updated.sha, parents
+      });
+      headSha = commit.sha;
+      if (remoteBranch) {
+        await api("/git/refs/heads/" + branch, "PATCH", { sha: headSha, force: false });
+      } else {
+        await api("/git/refs", "POST", { ref: "refs/heads/" + branch, sha: headSha });
+      }
+    }
+    validatedHead = headSha;
+    pr ??= await api("/pulls", "POST", {
+      title: "Add catalog project from issue #" + number,
+      head: branch,
+      base,
+      body: "Adds the accepted project to the catalog.\n\n"
+        + (screenshot ? "Includes the optimized WebP screenshot for the catalog card.\n\n" : "")
+        + "Catalog submission: #" + number
+    });
+
+    if ((await api(basePath)).object.sha === baseSha) {
+      try {
+        const merged = await api("/pulls/" + pr.number + "/merge", "PUT", { sha: headSha, merge_method: "squash" });
+        requireValue(merged.merged, "GitHub did not merge " + pr.html_url + ". " + (merged.message ?? ""));
+      } catch (error) {
+        const baseChanged = error.status === 405 || error.status === 409
+          ? (await api(basePath)).object.sha !== baseSha
+          : false;
+        if (!baseChanged && !/base branch (?:was modified|changed)/i.test(error.message)) throw error;
+        if (attempt === attempts) throw error;
+        console.log("GitHub reported a changed base. Retrying " + pr.html_url);
+        await delay(1_000 * 2 ** (attempt - 1));
+        continue;
+      }
+      console.log("Merged " + pr.html_url);
+      await publish();
+      return;
+    }
+    requireValue(attempt < attempts, "The base branch kept changing during validation. Review " + pr.html_url);
+    console.log("The base branch changed during validation. Retrying " + pr.html_url);
+    await delay(1_000 * 2 ** (attempt - 1));
   }
-  const pr = existing ?? await api("/pulls", "POST", {
-    title: "Add catalog project from issue #" + number,
-    head: branch,
-    base,
-    body: "Adds the accepted project to the catalog.\n\n"
-      + (screenshot ? "Includes the optimized WebP screenshot for the catalog card.\n\n" : "")
-      + "Catalog submission: #" + number
-  });
-  const currentBase = await api("/git/ref/heads/" + base);
-  requireValue(currentBase.object.sha === baseSha, "The base branch changed during validation. Review " + pr.html_url);
-  const merged = await api("/pulls/" + pr.number + "/merge", "PUT", { sha: headSha, merge_method: "squash" });
-  requireValue(merged.merged, "GitHub did not merge " + pr.html_url + ". " + (merged.message ?? ""));
-  console.log("Merged " + pr.html_url);
-  await publish();
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
