@@ -515,5 +515,26 @@
     "releaseYear": 1998,
     "match": "byte",
     "added": "2026-11-27"
+  },
+  {
+    "id": "proposal-36",
+    "title": "Secret Agent: The Hunt for Red Rock Rover",
+    "repository": "https://github.com/berobloom/sam-re",
+    "platform": "DOS",
+    "kind": "game",
+    "credit": "berobloom",
+    "target": "Episode 1, DOS shareware v1.0. The shipped LZEXE 0.91-packed SAM1.EXE (63,630 bytes). SHA-256 d8d0569b2ebf43314f92ba808bc0504f17fd69b84da1186aa065eea9ab4e24fc.",
+    "evidence": "https://github.com/berobloom/sam-re/blob/f7f63f1206c716744ddeadca0849790dccdd4dbd/README.md#building-and-checking",
+    "creditUrl": "https://github.com/berobloom",
+    "technologies": [
+      "Pascal",
+      "x86 Assembly",
+      "Turbo Pascal 5.0",
+      "NASM",
+      "LZEXE"
+    ],
+    "releaseYear": 1992,
+    "match": "byte",
+    "added": "2026-11-27"
   }
 ]
