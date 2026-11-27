@@ -475,5 +475,25 @@
     "releaseYear": 2001,
     "match": "byte",
     "added": "2026-11-27"
+  },
+  {
+    "id": "proposal-34",
+    "title": "Bushido Blade 2",
+    "repository": "https://github.com/tgg12321/ReBushido",
+    "platform": "PlayStation",
+    "kind": "game",
+    "credit": "tgg12321",
+    "target": "North American retail disc (SLUS-00663). The original build with mod switches off matches both SLUS_006.63 (606,208 bytes) and MOVOVL.EXE (124,928 bytes).",
+    "evidence": "https://github.com/tgg12321/ReBushido/blob/e031cd061591fa01d02f4523c47c9dd0239af9df/BUILD.md",
+    "creditUrl": "https://github.com/tgg12321",
+    "technologies": [
+      "C",
+      "MIPS Assembly",
+      "GCC 2.7.2",
+      "GNU Binutils"
+    ],
+    "releaseYear": 1998,
+    "match": "byte",
+    "added": "2026-11-27"
   }
 ]
