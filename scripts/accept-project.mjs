@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { mkdir, mkdtemp, readFile, rmdir, writeFile } from "node:fs/promises";
+import { access, mkdir, mkdtemp, readFile, rmdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
@@ -7,7 +7,6 @@ import { pathToFileURL } from "node:url";
 
 const catalogPath = "data/catalog.json";
 const screenshotDirectory = "assets/screenshots";
-const branchPrefix = "catalog/issue-";
 const paulArgentId = 98917699;
 const technologyField = "Technology stack";
 const releaseYearField = "Original release year";
@@ -102,7 +101,8 @@ function git(args, options = {}) {
   return execFileSync("git", args, { encoding: "utf8", ...options }).trim();
 }
 
-async function validateProject(baseSha, issue, checkPending) {
+async function prepareBatch(baseSha, approvals, pending, screenshots) {
+  if (!approvals.size) return { numbers: [] };
   const temporary = await mkdtemp(join(tmpdir(), "catalog-accept-"));
   const checkout = join(temporary, "checkout");
   let checkedOut = false;
@@ -111,14 +111,43 @@ async function validateProject(baseSha, issue, checkPending) {
     checkedOut = true;
     const path = join(checkout, catalogPath);
     const catalog = JSON.parse(await readFile(path, "utf8"));
-    const { screenshotUrl, ...project } = projectFromIssue(issue, catalog);
-    assertUnique(project, catalog);
-    await checkPending(project);
-    const screenshot = screenshotUrl ? await prepareScreenshot(project, screenshotUrl, checkout) : null;
-    const content = JSON.stringify([...catalog, project], null, 2) + "\n";
-    await writeFile(path, content);
-    execFileSync(process.execPath, ["build.mjs"], { cwd: checkout, stdio: "inherit" });
-    return { content, project, screenshot };
+    const groups = JSON.parse(await readFile(join(checkout, "data/technologies.json"), "utf8"));
+    const { validateCatalog } = await import(pathToFileURL(join(checkout, "scripts/validate-catalog.mjs")));
+    const checkScreenshot = ({ screenshot }) => access(join(checkout, screenshotDirectory, screenshot.file));
+    await validateCatalog(catalog, groups, checkScreenshot);
+    const numbers = [];
+    const files = [catalogPath];
+    for (const issue of approvals.values()) {
+      try {
+        const { screenshotUrl, ...project } = projectFromIssue(issue, catalog);
+        assertUnique(project, catalog);
+        assertUnique(project, pending);
+        let screenshot;
+        if (screenshotUrl) {
+          const key = project.id + "\n" + screenshotUrl;
+          screenshot = screenshots.get(key);
+          if (screenshot) {
+            await mkdir(join(checkout, screenshotDirectory), { recursive: true });
+            await writeFile(join(checkout, screenshot.path), screenshot.data);
+          } else {
+            const result = await prepareScreenshot(project, screenshotUrl, checkout);
+            screenshot = { ...result, descriptor: project.screenshot };
+            screenshots.set(key, screenshot);
+          }
+          project.screenshot = screenshot.descriptor;
+        }
+        await validateCatalog([...catalog, project], groups, checkScreenshot);
+        catalog.push(project);
+        numbers.push(issue.number);
+        if (screenshot) files.push(screenshot.path);
+      } catch (error) {
+        console.warn("Skipping issue #" + issue.number + ". " + error.message);
+      }
+    }
+    if (!numbers.length) return { numbers };
+    await writeFile(path, JSON.stringify(catalog, null, 2) + "\n");
+    git(["add", "--", ...files], { cwd: checkout });
+    return { numbers, tree: git(["write-tree"], { cwd: checkout }) };
   } finally {
     if (checkedOut) git(["worktree", "remove", "--force", checkout]);
     await rmdir(temporary);
@@ -228,15 +257,19 @@ export function assertUnique(project, catalog) {
 async function main() {
   const event = JSON.parse(await readFile(process.env.GITHUB_EVENT_PATH, "utf8"));
   const [owner, repo] = process.env.GITHUB_REPOSITORY.split("/");
-  const canAccept = event.sender?.login === owner || event.sender?.id === paulArgentId;
-  requireValue(event.action === "labeled" && event.label?.name === "accepted" && canAccept,
-    "Only the repository owner and PaulArgent can accept a project.");
+  const canAccept = (login, id) => login?.toLowerCase() === owner.toLowerCase() || id === paulArgentId;
+  requireValue(event.action === "labeled" && event.label?.name === "accepted" &&
+    canAccept(event.sender?.login, event.sender?.id), "Only the repository owner and PaulArgent can accept a project.");
   const token = process.env.GITHUB_TOKEN;
   requireValue(token, "Missing Actions token.");
   const base = event.repository.default_branch;
-  const endpoint = process.env.GITHUB_API_URL + "/repos/" + encodeURIComponent(owner) + "/" + encodeURIComponent(repo);
-  async function api(path, method = "GET", data, allowMissing = false) {
-    const response = await fetch(endpoint + path, {
+  const runId = process.env.GITHUB_RUN_ID;
+  requireValue(/^[1-9][0-9]*$/.test(runId ?? ""), "Invalid Actions run ID.");
+  const branch = "catalog/batch-" + runId;
+  const endpoint = process.env.GITHUB_API_URL + "/repos/" + owner + "/" + repo;
+
+  async function request(url, method = "GET", data, allowMissing = false) {
+    const response = await fetch(url, {
       method,
       headers: { Authorization: "Bearer " + token, Accept: "application/vnd.github+json",
         "Content-Type": "application/json" },
@@ -245,139 +278,206 @@ async function main() {
     if (allowMissing && response.status === 404) return null;
     if (!response.ok) {
       const error = await response.json().catch(() => null);
-      throw Object.assign(new Error(method + " " + path + " failed (" + response.status + "). " + (error?.message ?? "")),
+      throw Object.assign(new Error(method + " " + url + " failed (" + response.status + "). " + (error?.message ?? "")),
         { status: response.status });
     }
     return response.status === 204 ? null : response.json();
   }
+  const api = (path, ...options) => request(endpoint + path, ...options);
+  const basePath = "/git/ref/heads/" + base;
+  const batchPath = "/git/ref/heads/" + branch;
+  const sameRepo = pull => pull.head.repo?.full_name === owner + "/" + repo;
+  const previous = await api("/pulls?" + new URLSearchParams({ state: "all", head: owner + ":" + branch, base }));
+  let pr = previous.find(pull => sameRepo(pull) && pull.head.ref === branch && pull.user?.login === "github-actions[bot]");
+  requireValue(pr || previous.length === 0, "The batch branch is already used by another pull request.");
+
   async function publish() {
     const run = await api("/actions/workflows/catalog.yml/dispatches", "POST", { ref: base });
     console.log("Started catalog publication for " + base + (run?.html_url ? ": " + run.html_url : "."));
   }
-
-  const number = event.issue.number;
-  requireValue(Number.isSafeInteger(number) && number > 0, "Invalid issue number.");
-  const branch = branchPrefix + number;
-  const previous = await api("/pulls?" + new URLSearchParams({ state: "all", head: owner + ":" + branch, base }));
-  let pr = previous.find((pull) => pull.user?.login === "github-actions[bot]" &&
-    pull.head.ref === branch && pull.head.repo?.full_name === owner + "/" + repo);
-  requireValue(pr || previous.length === 0, "The proposal branch is already used by another pull request.");
-
-  async function readCatalog(sha) {
-    const file = await api("/contents/" + catalogPath + "?ref=" + encodeURIComponent(sha));
-    return JSON.parse(Buffer.from(file.content, "base64").toString("utf8"));
+  if (pr?.state === "closed") {
+    if (pr.merged_at && pr.merge_commit_sha === (await api(basePath)).object.sha) {
+      const runs = await api("/actions/workflows/catalog.yml/runs?" +
+        new URLSearchParams({ head_sha: pr.merge_commit_sha, branch: base }));
+      if (!runs.workflow_runs.some(run => run.status !== "completed" || run.conclusion === "success")) await publish();
+    }
+    return;
   }
-  async function checkPending(project) {
+
+  async function listAccepted() {
+    const numbers = [];
+    for (let page = 1; ; page++) {
+      const issues = await api("/issues?" + new URLSearchParams({ state: "open", labels: "accepted", per_page: "100", page }));
+      numbers.push(...issues.filter(issue => !issue.pull_request).map(issue => issue.number));
+      if (issues.length < 100) return [...new Set(numbers)].sort((a, b) => a - b);
+    }
+  }
+
+  async function collectBatch() {
+    // New label events can share a single pending job. The open issues are the queue.
+    const { object } = await api(basePath);
+    const file = await api("/contents/" + catalogPath + "?ref=" + object.sha);
+    const existing = new Set(JSON.parse(Buffer.from(file.content, "base64").toString("utf8")).map(item => item.id));
+    const outstanding = async () => (await listAccepted()).filter(number => !existing.has("proposal-" + number));
+    let numbers = await outstanding();
+    let stableFor = 0;
+    for (let elapsed = 0; numbers.length && stableFor < 60 && elapsed < 180; elapsed += 15) {
+      await delay(15_000);
+      const latest = await outstanding();
+      stableFor = latest.join(",") === numbers.join(",") ? stableFor + 15 : 0;
+      numbers = latest;
+    }
+    return numbers;
+  }
+
+  async function readTimeline(entries) {
+    const selections = entries.map(({ number, cursor }) => {
+      requireValue(Number.isSafeInteger(number) && number > 0, "Invalid issue number.");
+      return `i${number}: issue(number: ${number}) {
+        number body state lastEditedAt
+        timelineItems(last: 50, itemTypes: [LABELED_EVENT, UNLABELED_EVENT]${cursor ? ", before: " + JSON.stringify(cursor) : ""}) {
+          pageInfo { hasPreviousPage startCursor }
+          nodes {
+            __typename
+            ... on LabeledEvent { label { name } createdAt actor { login ... on User { databaseId } } }
+            ... on UnlabeledEvent { label { name } }
+          }
+        }
+      }`;
+    });
+    const result = await request(process.env.GITHUB_GRAPHQL_URL, "POST", {
+      query: `query($owner: String!, $repo: String!) { repository(owner: $owner, name: $repo) { ${selections.join("\n")} } }`,
+      variables: { owner, repo }
+    });
+    requireValue(!result.errors?.length && result.data?.repository,
+      "GitHub could not read approval history. " + (result.errors?.[0]?.message ?? ""));
+    return Object.values(result.data.repository).filter(Boolean);
+  }
+
+  async function readApprovals(numbers) {
+    const approvals = new Map();
+    for (let offset = 0; offset < numbers.length; offset += 15) {
+      let entries = numbers.slice(offset, offset + 15).map(number => ({ number }));
+      while (entries.length) {
+        const issues = await readTimeline(entries);
+        entries = [];
+        for (const { number, body, state, lastEditedAt, timelineItems } of issues) {
+          if (state !== "OPEN") continue;
+          const { nodes, pageInfo } = timelineItems;
+          const label = nodes.findLast(node => node?.label?.name === "accepted");
+          if (!label && pageInfo.hasPreviousPage) {
+            entries.push({ number, cursor: pageInfo.startCursor });
+            continue;
+          }
+          if (label?.__typename !== "LabeledEvent" || !canAccept(label.actor?.login, label.actor?.databaseId)) continue;
+          if (lastEditedAt && Date.parse(lastEditedAt) >= Date.parse(label.createdAt)) {
+            console.warn("Issue #" + number + " was edited at or after acceptance. Review and reapply accepted.");
+            continue;
+          }
+          approvals.set(number, { number, body, updated_at: label.createdAt });
+        }
+      }
+    }
+    return approvals;
+  }
+
+  async function pendingProjects() {
+    const projects = [];
     for (let page = 1; ; page++) {
       const pulls = await api("/pulls?" + new URLSearchParams({ state: "open", base, per_page: "100", page }));
       for (const pull of pulls) {
-        if (pull.head.repo?.full_name !== owner + "/" + repo || !pull.head.ref.startsWith(branchPrefix) ||
-            pull.head.ref === branch) continue;
-        const incomingId = "proposal-" + pull.head.ref.slice(branchPrefix.length);
-        const inside = await readCatalog(pull.head.sha);
-        assertUnique(project, inside.filter((item) => item.id === incomingId));
+        if (!sameRepo(pull) || pull.head.ref === branch || pull.user?.login !== "github-actions[bot]") continue;
+        const legacy = /^catalog\/issue-([1-9]\d*)$/.exec(pull.head.ref);
+        const numbers = legacy ? [legacy[1]] : /^catalog\/batch-[1-9]\d*$/.test(pull.head.ref)
+          ? [...(pull.body ?? "").matchAll(/^Catalog submission: #([1-9]\d*)$/gm)].map(match => match[1]) : [];
+        if (!numbers.length) continue;
+        const ids = new Set(numbers.map(number => "proposal-" + number));
+        const file = await api("/contents/" + catalogPath + "?ref=" + encodeURIComponent(pull.head.sha));
+        projects.push(...JSON.parse(Buffer.from(file.content, "base64").toString("utf8")).filter(item => ids.has(item.id)));
       }
-      if (pulls.length < 100) break;
+      if (pulls.length < 100) return projects;
     }
   }
 
-  const basePath = "/git/ref/heads/" + base;
-  const branchPath = "/git/ref/heads/" + branch;
-  const attempts = 5;
-  let validatedHead;
-  for (let attempt = 1; attempt <= attempts; attempt++) {
-    if (pr) {
-      pr = await api("/pulls/" + pr.number);
-      if (pr.state === "closed") {
-        if (pr.merged) await publish();
-        else console.log("The catalog pull request was closed: " + pr.html_url);
-        return;
-      }
-      requireValue(pr.base.ref === base && pr.head.ref === branch &&
-        pr.head.repo?.full_name === owner + "/" + repo, "The proposal pull request targets a different branch.");
-    }
-    const current = await api("/issues/" + number);
-    if (current.state !== "open" || current.pull_request || !current.labels.some(({ name }) => name === "accepted")) {
-      console.log("Issue is no longer an accepted, open proposal.");
-      return;
-    }
-    requireValue(current.body === event.issue.body, "The issue changed after acceptance. Review it and apply accepted again.");
+  const numbers = await collectBatch();
+  if (!numbers.length) return;
+  const pending = await pendingProjects();
+  const commitEnv = { ...process.env,
+    GIT_AUTHOR_NAME: "github-actions[bot]", GIT_COMMITTER_NAME: "github-actions[bot]",
+    GIT_AUTHOR_EMAIL: "41898282+github-actions[bot]@users.noreply.github.com",
+    GIT_COMMITTER_EMAIL: "41898282+github-actions[bot]@users.noreply.github.com"
+  };
+  const pushEnv = { ...process.env, GIT_TERMINAL_PROMPT: "0", GIT_CONFIG_COUNT: "1",
+    GIT_CONFIG_KEY_0: "http." + process.env.GITHUB_SERVER_URL + "/.extraheader",
+    GIT_CONFIG_VALUE_0: "AUTHORIZATION: basic " + Buffer.from("x-access-token:" + token).toString("base64")
+  };
 
+  let validatedHead;
+  const screenshots = new Map();
+  for (let attempt = 1; attempt <= 5; attempt++) {
     git(["fetch", "--no-tags", "origin", "refs/heads/" + base]);
     const baseSha = git(["rev-parse", "FETCH_HEAD"]);
-    const baseTree = git(["rev-parse", baseSha + "^{tree}"]);
-    const { content, project, screenshot } = await validateProject(baseSha, event.issue, checkPending);
-    const files = [];
-    if (screenshot) {
-      const blob = await api("/git/blobs", "POST", { content: screenshot.data.toString("base64"), encoding: "base64" });
-      files.push({ path: screenshot.path, mode: "100644", type: "blob", sha: blob.sha });
+    const currentCatalog = JSON.parse(git(["show", baseSha + ":" + catalogPath]));
+    const existing = new Set(currentCatalog.map(item => item.id));
+    const remaining = numbers.filter(number => !existing.has("proposal-" + number));
+    const approvals = await readApprovals(remaining);
+    const batch = await prepareBatch(baseSha, approvals, pending, screenshots);
+    if (!batch.numbers.length) {
+      if (pr) await api("/pulls/" + pr.number, "PATCH", { state: "closed" });
+      console.log("No new accepted submissions to publish.");
+      return;
     }
-    const createTree = (tree, catalog) => api("/git/trees", "POST", {
-      base_tree: tree,
-      tree: [{ path: catalogPath, mode: "100644", type: "blob", content: catalog }, ...files]
-    });
-    const updated = await createTree(baseTree, content);
-    const remoteBranch = await api(branchPath, "GET", undefined, true);
-    const oldHead = remoteBranch?.object.sha;
-    let prior;
-    if (oldHead && oldHead !== baseSha) {
-      prior = await api("/git/commits/" + oldHead);
-      if (oldHead !== validatedHead && prior.tree.sha !== updated.sha) {
-        const oldBase = prior.parents[0]?.sha;
-        requireValue(oldBase, "The proposal branch has no base commit.");
-        const oldCatalog = await readCatalog(oldBase);
-        const { screenshotUrl, ...oldProject } = projectFromIssue(event.issue, oldCatalog);
-        if (screenshot) oldProject.screenshot = project.screenshot;
-        const parent = await api("/git/commits/" + oldBase);
-        const expected = await createTree(parent.tree.sha, JSON.stringify([...oldCatalog, oldProject], null, 2) + "\n");
-        requireValue(prior.tree.sha === expected.sha, "The proposal branch contains changes outside the validated submission.");
-      }
+
+    const oldHead = (await api(batchPath, "GET", undefined, true))?.object.sha;
+    requireValue(!pr || oldHead, "The batch pull request has no proposal branch.");
+    if (oldHead) {
+      git(["fetch", "--no-tags", "origin", "refs/heads/" + branch]);
+      requireValue(git(["rev-parse", "FETCH_HEAD"]) === oldHead, "The batch branch changed during validation.");
+      requireValue(oldHead === validatedHead || git(["rev-parse", oldHead + "^{tree}"]) === batch.tree,
+        "The batch branch contains changes outside the validated submissions.");
     }
-    if (pr) requireValue(oldHead, "The approved pull request has no proposal branch.");
+    requireValue(!validatedHead || oldHead === validatedHead, "The validated batch branch was modified.");
     let headSha = oldHead;
-    if (!prior || prior.parents[0]?.sha !== baseSha || prior.tree.sha !== updated.sha) {
-      // Keep the previous proposal head as a parent so ref updates remain fast-forward.
-      const parents = prior ? [baseSha, oldHead] : [baseSha];
-      const commit = await api("/git/commits", "POST", {
-        message: "Add catalog project from issue #" + number, tree: updated.sha, parents
-      });
-      headSha = commit.sha;
-      if (remoteBranch) {
-        await api("/git/refs/heads/" + branch, "PATCH", { sha: headSha, force: false });
-      } else {
-        await api("/git/refs", "POST", { ref: "refs/heads/" + branch, sha: headSha });
-      }
+    if (!oldHead || git(["rev-parse", oldHead + "^{tree}"]) !== batch.tree ||
+        git(["rev-parse", oldHead + "^1"]) !== baseSha) {
+      const parents = oldHead ? ["-p", baseSha, "-p", oldHead] : ["-p", baseSha];
+      headSha = git(["commit-tree", batch.tree, ...parents, "-m", "Add accepted catalog submissions"], { env: commitEnv });
+      // Keep the previous proposal head as a parent for fast-forward updates.
+      git(["push", "origin", headSha + ":refs/heads/" + branch], { env: pushEnv });
     }
     validatedHead = headSha;
-    pr ??= await api("/pulls", "POST", {
-      title: "Add catalog project from issue #" + number,
-      head: branch,
-      base,
-      body: "Adds the accepted project to the catalog.\n\n"
-        + (screenshot ? "Includes the optimized WebP screenshot for the catalog card.\n\n" : "")
-        + "Catalog submission: #" + number
-    });
+    const body = "Adds the accepted projects to the catalog.\n\n" +
+      batch.numbers.map(number => "Catalog submission: #" + number).join("\n");
+    if (!pr) {
+      pr = await api("/pulls", "POST", { title: "Add accepted catalog submissions", head: branch, base, body });
+    } else if (pr.body !== body) {
+      pr = await api("/pulls/" + pr.number, "PATCH", { body });
+    }
 
-    if ((await api(basePath)).object.sha === baseSha) {
+    const reviewed = await readApprovals(batch.numbers);
+    const stillApproved = batch.numbers.every(number => {
+      const current = reviewed.get(number);
+      const original = approvals.get(number);
+      return current?.body === original.body && current?.updated_at === original.updated_at;
+    });
+    if (stillApproved && (await api(basePath)).object.sha === baseSha) {
       try {
         const merged = await api("/pulls/" + pr.number + "/merge", "PUT", { sha: headSha, merge_method: "squash" });
         requireValue(merged.merged, "GitHub did not merge " + pr.html_url + ". " + (merged.message ?? ""));
       } catch (error) {
-        const baseChanged = error.status === 405 || error.status === 409
-          ? (await api(basePath)).object.sha !== baseSha
-          : false;
+        const baseChanged = [405, 409].includes(error.status) && (await api(basePath)).object.sha !== baseSha;
         if (!baseChanged && !/base branch (?:was modified|changed)/i.test(error.message)) throw error;
-        if (attempt === attempts) throw error;
-        console.log("GitHub reported a changed base. Retrying " + pr.html_url);
+        if (attempt === 5) throw error;
+        console.log("The base branch changed. Retrying " + pr.html_url);
         await delay(1_000 * 2 ** (attempt - 1));
         continue;
       }
-      console.log("Merged " + pr.html_url);
+      console.log("Merged " + pr.html_url + " with " + batch.numbers.length + " submissions.");
       await publish();
       return;
     }
-    requireValue(attempt < attempts, "The base branch kept changing during validation. Review " + pr.html_url);
-    console.log("The base branch changed during validation. Retrying " + pr.html_url);
+    requireValue(attempt < 5, "The approvals or base branch kept changing. Review " + pr.html_url);
+    console.log("The approvals or base branch changed. Retrying " + pr.html_url);
     await delay(1_000 * 2 ** (attempt - 1));
   }
 }

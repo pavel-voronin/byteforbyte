@@ -10,6 +10,11 @@ permissions:
 
 jobs:
   validate-and-build:
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.user.login != 'github-actions[bot]' ||
+      github.event.pull_request.head.repo.full_name != github.repository ||
+      !startsWith(github.head_ref, 'catalog/batch-')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -82,8 +87,13 @@ jobs:
             jq -cre '.projects | map(.id | select(test("^proposal-[1-9][0-9]*$")) | ltrimstr("proposal-"))')
           merged=$(gh api --paginate "repos/$GH_REPO/pulls?state=closed&base=main&per_page=100" |
             jq -cs '[.[][] | select(.merged_at != null and .user.login == "github-actions[bot]" and
-              .head.repo.full_name == .base.repo.full_name) | .head.ref |
-              select(test("^catalog/issue-[1-9][0-9]*$")) | ltrimstr("catalog/issue-")]')
+              .head.repo.full_name == .base.repo.full_name) |
+              if .head.ref | test("^catalog/issue-[1-9][0-9]*$") then
+                .head.ref | ltrimstr("catalog/issue-")
+              elif .head.ref | test("^catalog/batch-[1-9][0-9]*$") then
+                (.body // "") | split("\\n")[] |
+                select(test("^Catalog submission: #[1-9][0-9]*$")) | ltrimstr("Catalog submission: #")
+              else empty end]')
           issues=$(gh api --paginate "repos/$GH_REPO/issues?state=open&per_page=100" |
             jq -r --argjson published "$published" --argjson merged "$merged" '
               .[] | select(.pull_request == null) | (.number | tostring) as $id |
@@ -92,4 +102,5 @@ jobs:
             gh api --method PATCH "repos/$GH_REPO/issues/$number" \
               -f state=closed -f state_reason=completed --silent
             echo "Closed published catalog issue #$number."
+            sleep 1
           done

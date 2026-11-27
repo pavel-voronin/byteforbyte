@@ -1,4 +1,4 @@
-name: Accept catalog project
+name: Accept catalog projects
 on:
   issues:
     types: [labeled]
@@ -17,7 +17,6 @@ jobs:
       (github.event.sender.login == github.repository_owner || github.event.sender.id == 98917699)
     concurrency:
       group: accept-catalog-project
-      queue: max
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
