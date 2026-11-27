@@ -376,5 +376,24 @@
     ],
     "match": "byte",
     "added": "2026-11-23"
+  },
+  {
+    "id": "proposal-29",
+    "title": "Pokémon Black Version",
+    "repository": "https://github.com/Project-Holon/aletheia",
+    "platform": "Nintendo DS",
+    "kind": "game",
+    "credit": "Project Holon",
+    "target": "USA/Europe v1.0, NDSi Enhanced (IRBO). Full 256 MiB ROM, including the DSi code. SHA-256 b9979189d299a0231d01c8885c0d054b706976ffc75427ca59d84e0ce1493034.",
+    "evidence": "https://github.com/Project-Holon/aletheia/blob/ea39ea3ad618b328cb5df5230800506461759b82/README.md#usage",
+    "creditUrl": "https://github.com/Project-Holon",
+    "technologies": [
+      "C",
+      "ARM Assembly",
+      "Metrowerks CodeWarrior"
+    ],
+    "releaseYear": 2011,
+    "match": "byte",
+    "added": "2026-11-27"
   }
 ]
