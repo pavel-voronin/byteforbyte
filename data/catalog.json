@@ -415,5 +415,25 @@
     "releaseYear": 1999,
     "match": "byte",
     "added": "2026-11-27"
+  },
+  {
+    "id": "proposal-31",
+    "title": "Sesame Street: Elmo's Letter Adventure",
+    "repository": "https://github.com/TheGh0stShip/Sesame-Street-Elmos-Letter-Adventure-N64",
+    "platform": "Nintendo 64",
+    "kind": "game",
+    "credit": "TheGh0stShip",
+    "target": "USA retail. Full 8 MiB ROM. SHA-256 eadfd24dd54f56343dd228cddfce67dd8af450a2e8d0040f6a1ed87ea81fdef5.",
+    "evidence": "https://github.com/TheGh0stShip/Sesame-Street-Elmos-Letter-Adventure-N64/blob/f61947f51c01eae0477c858982b6e6f74735b7ec/README.md#the-two-commands",
+    "creditUrl": "https://github.com/TheGh0stShip",
+    "technologies": [
+      "C",
+      "MIPS Assembly",
+      "KMC GCC 2.7.2",
+      "SGI IDO"
+    ],
+    "releaseYear": 1999,
+    "match": "byte",
+    "added": "2026-11-27"
   }
 ]
